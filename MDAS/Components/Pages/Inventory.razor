@@ -1,5 +1,7 @@
 ﻿@page "/inventory"
 @using MDAS.Components.Layout
+@using MDAS.Data
+@inject InventoryServices Service
 @layout AdminLayout
 
 <PageTitle>Midas - Inventory</PageTitle>
@@ -10,265 +12,98 @@
             <h2 class="fw-bold text-navy">Inventory Asset Manager</h2>
             <p class="text-muted">Master Product List & Stock Matrix</p>
         </div>
-        <button class="btn btn-navy px-4 rounded-pill">
-            <i class="bi bi-plus-lg me-2"></i>New Product
-        </button>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-3">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 rounded-start-pill ps-3">
-                            <i class="bi bi-search text-muted"></i>
-                        </span>
-                        <input type="text" class="form-control border-start-0 rounded-end-pill"
-                               placeholder="Search product by name, SKU, or tag..."
-                               @bind="searchText" @bind:event="oninput" />
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select rounded-pill">
-                        <option selected>All Categories</option>
-                        <option>Men's Wear</option>
-                        <option>Women's Wear</option>
-                        <option>Accessories</option>
-                    </select>
-                </div>
-                <div class="col-md-3 text-end">
-                    <button class="btn btn-outline-secondary rounded-pill w-100">
-                        <i class="bi bi-sliders me-2"></i>Filter
-                    </button>
-                </div>
-            </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary rounded-pill" @onclick="GenerateSampleData">
+                <i class="bi bi-database-add me-2"></i>Generate Sample Data
+            </button>
+            <button class="btn btn-navy px-4 rounded-pill">
+                <i class="bi bi-plus-lg me-2"></i>New Product
+            </button>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr class="text-muted small text-uppercase">
-                            <th class="ps-4">Product Info</th>
-                            <th>SKU</th>
-                            <th>Category</th>
-                            <th>Variants (Matrix)</th>
-                            <th>Price</th>
-                            <th>Stock Level</th>
-                            <th>Status</th>
-                            <th class="text-end pe-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in FilteredProducts)
-                        {
+                @if (Products == null)
+                {
+                    <div class="p-5 text-center text-muted">Loading SQL Data...</div>
+                }
+                else if (Products.Count == 0)
+                {
+                    <div class="p-5 text-center text-muted">
+                        No products found in database.
+                    </div>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
                             <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
-                                            <i class="bi bi-image text-muted"></i>
-                                        </div>
-                                        <div>
-                                            <span class="fw-bold text-dark d-block">@item.Name</span>
-                                            <small class="text-muted">@item.Brand</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-muted small">@item.SKU</td>
-                                <td><span class="badge bg-light text-dark border">@item.Category</span></td>
-                                <td>
-                                    <div class="d-flex gap-1 flex-wrap" style="max-width: 150px;">
-                                        @foreach (var v in item.Variants)
-                                        {
-                                            <span class="badge bg-secondary opacity-75" style="font-size: 0.65rem;">@v</span>
-                                        }
-                                    </div>
-                                </td>
-                                <td class="fw-bold">₱ @item.Price.ToString("N2")</td>
-                                <td>
-                                    @if (item.Stock < 20)
-                                    {
-                                        <span class="text-danger fw-bold">@item.Stock units</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-success fw-bold">@item.Stock units</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (item.Stock > 0)
-                                    {
-                                        <span class="badge bg-success-subtle text-success rounded-pill px-3">Active</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-3">Out of Stock</span>
-                                    }
-                                </td>
-                                <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light border me-1" title="Stock Adjustment" @onclick="() => OpenAdjustmentModal(item)">
-                                        <i class="bi bi-box-seam"></i> Adjust
-                                    </button>
-                                    <button class="btn btn-sm btn-light border" title="Edit Master">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                </td>
+                                <th class="ps-4">Product Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Products)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">@item.Name</td>
+                                    <td><span class="badge bg-light text-dark border">@item.Category</span></td>
+                                    <td class="fw-bold">₱ @item.Price.ToString("N2")</td>
+                                    <td>@item.Stock</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(item)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             </div>
         </div>
     </div>
 </div>
 
-@if (showModal && selectedProduct != null)
-{
-    <div class="modal-backdrop show"></div>
-    <div class="modal show d-block" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 shadow">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Stock Adjustment</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-light border d-flex align-items-center">
-                        <i class="bi bi-info-circle-fill text-navy me-2"></i>
-                        <span>Adjusting stock for: <strong>@selectedProduct.Name</strong></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small text-muted">Adjustment Type</label>
-                        <select class="form-select">
-                            <option>Restock (Add)</option>
-                            <option>Damaged (Remove)</option>
-                            <option>Inventory Correction</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small text-muted">Quantity</label>
-                        <input type="number" class="form-control" placeholder="0" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small text-muted">Notes</label>
-                        <textarea class="form-control" rows="2" placeholder="Reason for adjustment..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill" @onclick="CloseModal">Cancel</button>
-                    <button type="button" class="btn btn-navy rounded-pill px-4" @onclick="SaveStock">Save Adjustment</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
 <style>
-    .text-navy {
-        color: #02001E;
-    }
-
-    .bg-navy {
-        background-color: #02001E;
-    }
-
-    .btn-navy {
-        background-color: #02001E;
-        color: white;
-        transition: all 0.3s;
-    }
-
-        .btn-navy:hover {
-            background-color: #0c006b;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-    /* Table Styling */
-    .table thead th {
-        background-color: #f8f9fa;
-        border-bottom: 0;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        font-weight: 600;
-    }
-
-    .table tbody td {
-        vertical-align: middle;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-
-    /* Manual Modal Backdrop styling since we aren't using Bootstrap JS for this logic yet */
-    .modal-backdrop {
-        background-color: rgba(0,0,0,0.5);
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 1040;
-    }
+    .text-navy { color: #02001E; }
+    .btn-navy { background-color: #02001E; color: white; }
 </style>
 
 @code {
-    // 1. Data Model for Product
-    public class Product
+    private List<Product>? Products;
+
+    protected override async Task OnInitializedAsync()
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
-        public string SKU { get; set; } = "";
-        public string Category { get; set; } = "";
-        public string Brand { get; set; } = "";
-        public decimal Price { get; set; }
-        public int Stock { get; set; }
-        public List<string> Variants { get; set; } = new();
+        await LoadData();
     }
 
-    // 2. Dummy Data (Inventory List)
-    private List<Product> Products = new List<Product>
+    private async Task LoadData()
     {
-        new Product { Id = 1, Name = "Classic Oxford Shirt", SKU = "MD-001", Category = "Men's Wear", Brand = "Midas Basics", Price = 1200.00m, Stock = 45, Variants = new() { "S", "M", "L", "XL", "Blue", "White" } },
-        new Product { Id = 2, Name = "Slim Fit Chino Pants", SKU = "MD-002", Category = "Men's Wear", Brand = "Midas Basics", Price = 1500.00m, Stock = 12, Variants = new() { "30", "32", "34", "Beige", "Black" } },
-        new Product { Id = 3, Name = "Floral Summer Dress", SKU = "MD-003", Category = "Women's Wear", Brand = "Midas Seasonal", Price = 2100.00m, Stock = 5, Variants = new() { "S", "M", "Red" } },
-        new Product { Id = 4, Name = "Leather Belt", SKU = "ACC-001", Category = "Accessories", Brand = "Midas Leather", Price = 850.00m, Stock = 100, Variants = new() { "One Size", "Brown" } },
-        new Product { Id = 5, Name = "Denim Jacket", SKU = "MD-005", Category = "Unisex", Brand = "Denim Co", Price = 3500.00m, Stock = 0, Variants = new() { "M", "L", "Blue" } },
-    };
-
-    // 3. Search Logic
-    private string searchText = "";
-
-    // Filters the list based on the search box
-    private IEnumerable<Product> FilteredProducts =>
-        string.IsNullOrWhiteSpace(searchText)
-        ? Products
-        : Products.Where(p => p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                              p.SKU.Contains(searchText, StringComparison.OrdinalIgnoreCase));
-
-    // 4. Modal Logic (Manual Stock Adjustment)
-    private bool showModal = false;
-    private Product? selectedProduct;
-
-    private void OpenAdjustmentModal(Product product)
-    {
-        selectedProduct = product;
-        showModal = true;
+        try 
+        {
+            Products = await Service.GetAllProductsAsync();
+        }
+        catch
+        {
+            Products = new List<Product>();
+        }
     }
 
-    private void CloseModal()
+    private async Task GenerateSampleData()
     {
-        showModal = false;
-        selectedProduct = null;
+        await Service.GenerateSampleDataAsync();
+        await LoadData();
     }
 
-    private void SaveStock()
+    private async Task DeleteProduct(Product p)
     {
-        // Here you would normally save to database
-        // For now, we just close the UI
-        CloseModal();
+        await Service.DeleteProductAsync(p);
+        await LoadData();
     }
 }

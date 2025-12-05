@@ -1,0 +1,300 @@
+﻿@page "/employees"
+@using MDAS.Components.Layout
+@layout AdminLayout
+
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Employees</h3>
+            <span class="text-secondary small">The Master Database</span>
+        </div>
+        <div>
+            <div class="btn-group bg-white border shadow-sm">
+                <button class="btn btn-sm @(CurrentView == "Staff" ? "btn-primary" : "btn-light text-secondary")"
+                        @onclick='() => CurrentView = "Staff"'>
+                    <i class="bi bi-people-fill"></i> Staff List
+                </button>
+                <button class="btn btn-sm @(CurrentView == "Attendance" ? "btn-primary" : "btn-light text-secondary")"
+                        @onclick='() => CurrentView = "Attendance"'>
+                    <i class="bi bi-clock-history"></i> Attendance
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (CurrentView == "Staff")
+    {
+        <div class="card shadow-sm border-0 animated-fade">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 text-primary"><i class="bi bi-person-lines-fill"></i> Active Personnel</h5>
+                <button class="btn btn-primary btn-sm" style="background-color: #02001E;" @onclick="OpenAddEmployeeModal">
+                    <i class="bi bi-person-plus-fill"></i> Add Employee
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>Name</th>
+                            <th>Role / Position</th>
+                            <th>Daily Rate</th>
+                            <th>Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var emp in StaffList)
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted small">#@emp.Id</td>
+                                <td class="fw-bold">@emp.Name</td>
+                                <td>@emp.Role</td>
+                                <td>₱@emp.DailyRate.ToString("N2")</td>
+                                <td>
+                                    <span class="badge @(emp.IsActive ? "bg-success" : "bg-secondary") rounded-pill">
+                                        @(emp.IsActive ? "Active" : "On Leave")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-danger" title="Remove" @onclick="() => DeleteEmployee(emp)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (CurrentView == "Attendance")
+    {
+        <div class="card shadow-sm border-0 animated-fade">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 text-primary"><i class="bi bi-calendar-check"></i> Daily Time Record</h5>
+                <button class="btn btn-success btn-sm" @onclick="OpenAttendanceModal">
+                    <i class="bi bi-stopwatch"></i> Log Time
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>Employee</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Hours Worked</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in AttendanceLogs)
+                        {
+                            <tr>
+                                <td class="ps-4">@log.Date.ToString("MMM dd")</td>
+                                <td class="fw-bold">@log.EmployeeName</td>
+                                <td class="text-success">@log.TimeIn.ToString("hh:mm tt")</td>
+                                <td class="text-danger">@log.TimeOut.ToString("hh:mm tt")</td>
+                                <td class="fw-bold">@log.TotalHours.ToString("0.0") hrs</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
+
+@if (IsEmployeeModalOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register New Employee</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" @bind="NewEmployee.Name" placeholder="e.g. Juan Dela Cruz" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Position</label>
+                        <select class="form-select" @bind="NewEmployee.Role">
+                            <option value="Cashier">Cashier</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Stock Clerk">Stock Clerk</option>
+                            <option value="Cleaner">Cleaner</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Daily Rate (₱)</label>
+                        <input type="number" class="form-control" @bind="NewEmployee.DailyRate" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveEmployee">Save Record</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (IsAttendanceModalOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Log Attendance</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Employee</label>
+                        <select class="form-select" @bind="NewLog.EmployeeName">
+                            <option value="" disabled selected>Select Employee...</option>
+                            @foreach (var emp in StaffList)
+                            {
+                                <option value="@emp.Name">@emp.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Time In</label>
+                            <input type="time" class="form-control" @bind="NewLog.TimeIn" />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Time Out</label>
+                            <input type="time" class="form-control" @bind="NewLog.TimeOut" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-success" @onclick="SaveAttendance">Save Log</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .modal-backdrop {
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .animated-fade {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@code {
+    // --- MODELS ---
+    public class Employee
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Role { get; set; } = "Cashier";
+        public decimal DailyRate { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class AttendanceRecord
+    {
+        public DateTime Date { get; set; } = DateTime.Now;
+        public string EmployeeName { get; set; } = "";
+        public DateTime TimeIn { get; set; } = DateTime.Today.AddHours(8); // Default 8 AM
+        public DateTime TimeOut { get; set; } = DateTime.Today.AddHours(17); // Default 5 PM
+
+        public double TotalHours => (TimeOut - TimeIn).TotalHours > 0 ? (TimeOut - TimeIn).TotalHours : 0;
+    }
+
+    // --- STATE ---
+    private string CurrentView = "Staff"; // "Staff" or "Attendance"
+    private bool IsEmployeeModalOpen = false;
+    private bool IsAttendanceModalOpen = false;
+
+    private Employee NewEmployee = new Employee();
+    private AttendanceRecord NewLog = new AttendanceRecord();
+
+    // --- DUMMY DATA ---
+    private List<Employee> StaffList = new List<Employee>
+    {
+        new Employee { Id = 101, Name = "Cherylou Hong", Role = "Manager", DailyRate = 1200 },
+        new Employee { Id = 102, Name = "Mark Santos", Role = "Stock Clerk", DailyRate = 600 },
+        new Employee { Id = 103, Name = "Anna Lee", Role = "Cashier", DailyRate = 650 }
+    };
+
+    private List<AttendanceRecord> AttendanceLogs = new List<AttendanceRecord>
+    {
+        new AttendanceRecord { Date = DateTime.Now.AddDays(-1), EmployeeName = "Mark Santos", TimeIn = DateTime.Today.AddHours(8), TimeOut = DateTime.Today.AddHours(17) },
+        new AttendanceRecord { Date = DateTime.Now.AddDays(-1), EmployeeName = "Anna Lee", TimeIn = DateTime.Today.AddHours(8).AddMinutes(15), TimeOut = DateTime.Today.AddHours(17) }
+    };
+
+    // --- FUNCTIONS ---
+
+    private void OpenAddEmployeeModal()
+    {
+        NewEmployee = new Employee(); // Reset
+        IsEmployeeModalOpen = true;
+    }
+
+    private void OpenAttendanceModal()
+    {
+        NewLog = new AttendanceRecord(); // Reset
+        IsAttendanceModalOpen = true;
+    }
+
+    private void CloseModals()
+    {
+        IsEmployeeModalOpen = false;
+        IsAttendanceModalOpen = false;
+    }
+
+    private void SaveEmployee()
+    {
+        if (!string.IsNullOrWhiteSpace(NewEmployee.Name))
+        {
+            NewEmployee.Id = StaffList.Count > 0 ? StaffList.Max(e => e.Id) + 1 : 101; // Auto ID
+            StaffList.Add(NewEmployee);
+            CloseModals();
+        }
+    }
+
+    private void SaveAttendance()
+    {
+        if (!string.IsNullOrWhiteSpace(NewLog.EmployeeName))
+        {
+            // Fix the Date part of TimeIn/TimeOut to match today for calculation safety
+            NewLog.Date = DateTime.Now;
+            AttendanceLogs.Insert(0, NewLog);
+            CloseModals();
+        }
+    }
+
+    private void DeleteEmployee(Employee emp)
+    {
+        StaffList.Remove(emp);
+    }
+}

@@ -1,0 +1,260 @@
+﻿@page "/expenses"
+@using MDAS.Components.Layout
+@layout AdminLayout
+
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Expenses</h3>
+            <span class="text-secondary small">Operational Cost Tracker</span>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary me-2" @onclick="OpenCategoryModal">
+                <i class="bi bi-tags-fill"></i> Manage Categories
+            </button>
+            <button class="btn btn-primary" style="background-color: #02001E; border: none;" @onclick="OpenExpenseModal">
+                <i class="bi bi-plus-lg"></i> Add Expense
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-list-check"></i> Expense Log</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th class="text-end pe-4">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (ExpenseList.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No expenses recorded yet.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in ExpenseList)
+                                {
+                                    <tr>
+                                        <td class="ps-4">@item.Date.ToString("MMM dd, yyyy")</td>
+                                        <td><span class="badge bg-light text-dark border">@item.Category</span></td>
+                                        <td>@item.Description</td>
+                                        <td class="text-end pe-4 fw-bold">₱@item.Amount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-pie-chart"></i> Categories</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var cat in Categories)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                @cat.Name
+                                <span class="badge @(cat.Type == "Fixed" ? "bg-primary" : "bg-warning text-dark") rounded-pill">
+                                    @cat.Type
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (IsExpenseModalOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Record New Expense</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" @bind="NewExpense.Category">
+                            <option value="" disabled selected>Select a category...</option>
+                            @foreach (var cat in Categories)
+                            {
+                                <option value="@cat.Name">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" @bind="NewExpense.Description" placeholder="e.g. Monthly Rent" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Amount</label>
+                        <input type="number" class="form-control" @bind="NewExpense.Amount" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" @bind="NewExpense.Date" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveExpense">Save Expense</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (IsCategoryModalOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manage Categories</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="New Category Name" @bind="NewCategoryName" />
+                        <select class="form-select" style="max-width: 100px;" @bind="NewCategoryType">
+                            <option value="Fixed">Fixed</option>
+                            <option value="Variable">Variable</option>
+                        </select>
+                        <button class="btn btn-success" @onclick="AddCategory">Add</button>
+                    </div>
+
+                    <ul class="list-group">
+                        @foreach (var cat in Categories)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@cat.Name <small class="text-muted">(@cat.Type)</small></span>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(cat)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    /* Simple backdrop for custom modals */
+    .modal-backdrop {
+        background-color: rgba(0,0,0,0.5);
+    }
+</style>
+
+@code {
+    // --- MODELS ---
+    public class ExpenseItem
+    {
+        public DateTime Date { get; set; } = DateTime.Now;
+        public string Category { get; set; } = "";
+        public string Description { get; set; } = "";
+        public decimal Amount { get; set; }
+    }
+
+    public class CategoryItem
+    {
+        public string Name { get; set; } = "";
+        public string Type { get; set; } = "Fixed"; // Fixed or Variable
+    }
+
+    // --- STATE VARIABLES ---
+    private bool IsExpenseModalOpen = false;
+    private bool IsCategoryModalOpen = false;
+
+    // Data Holders
+    private ExpenseItem NewExpense = new ExpenseItem();
+    private string NewCategoryName = "";
+    private string NewCategoryType = "Variable";
+
+    // --- DATA LISTS (Pre-populated for demo) ---
+    private List<CategoryItem> Categories = new List<CategoryItem>
+    {
+        new CategoryItem { Name = "Rent", Type = "Fixed" },
+        new CategoryItem { Name = "Utilities", Type = "Variable" },
+        new CategoryItem { Name = "Salaries", Type = "Fixed" },
+        new CategoryItem { Name = "Office Supplies", Type = "Variable" }
+    };
+
+    private List<ExpenseItem> ExpenseList = new List<ExpenseItem>
+    {
+        new ExpenseItem { Date = DateTime.Now, Category = "Rent", Description = "Office Space Rent", Amount = 15000.00m },
+        new ExpenseItem { Date = DateTime.Now.AddDays(-2), Category = "Utilities", Description = "Electric Bill", Amount = 4500.50m }
+    };
+
+    // --- FUNCTIONS ---
+
+    // Modal Controls
+    private void OpenExpenseModal()
+    {
+        NewExpense = new ExpenseItem { Date = DateTime.Now }; // Reset form
+        IsExpenseModalOpen = true;
+    }
+
+    private void OpenCategoryModal()
+    {
+        NewCategoryName = ""; // Reset input
+        IsCategoryModalOpen = true;
+    }
+
+    private void CloseModals()
+    {
+        IsExpenseModalOpen = false;
+        IsCategoryModalOpen = false;
+    }
+
+    // Save Logic
+    private void SaveExpense()
+    {
+        if (!string.IsNullOrWhiteSpace(NewExpense.Category) && NewExpense.Amount > 0)
+        {
+            // Add to list (Insert at top so it appears first)
+            ExpenseList.Insert(0, NewExpense);
+            CloseModals();
+        }
+    }
+
+    private void AddCategory()
+    {
+        if (!string.IsNullOrWhiteSpace(NewCategoryName))
+        {
+            Categories.Add(new CategoryItem { Name = NewCategoryName, Type = NewCategoryType });
+            NewCategoryName = ""; // Clear input
+        }
+    }
+
+    private void DeleteCategory(CategoryItem item)
+    {
+        Categories.Remove(item);
+    }
+}

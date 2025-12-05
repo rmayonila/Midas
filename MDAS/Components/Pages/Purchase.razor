@@ -1,0 +1,383 @@
+﻿@page "/purchase"
+@using System.Globalization
+@using MDAS.Components.Layout
+@using MDAS.Data
+@inject InventoryServices InventoryService
+@inject PurchaseService PurchaseService
+@inject IJSRuntime JS
+@layout AdminLayout
+
+<PageTitle>Midas - Purchase</PageTitle>
+
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold" style="color: #020412;">
+                @if (activeView == "main") { <text>Purchase & Orders</text> }
+                else if (activeView == "suppliers") { <text>Supplier Database</text> }
+                else if (activeView == "receiving") { <text>Receiving Dock</text> }
+            </h2>
+            <p class="text-muted">Real Database Connection</p>
+        </div>
+
+        <div class="d-flex gap-2 bg-white p-1 rounded-pill border shadow-sm">
+            <button class="btn rounded-pill px-3 @(activeView == "main" ? "btn-navy" : "btn-light text-muted")" @onclick='() => activeView = "main"'>
+                <i class="bi bi-file-earmark-text me-2"></i>Orders
+            </button>
+            <button class="btn rounded-pill px-3 @(activeView == "suppliers" ? "btn-navy" : "btn-light text-muted")" @onclick='() => activeView = "suppliers"'>
+                <i class="bi bi-truck me-2"></i>Suppliers
+            </button>
+            <button class="btn rounded-pill px-3 @(activeView == "receiving" ? "btn-navy" : "btn-light text-muted")" @onclick='() => activeView = "receiving"'>
+                <i class="bi bi-box-seam me-2"></i>Receiving
+            </button>
+        </div>
+    </div>
+
+    @if (activeView == "main")
+    {
+        <div class="row g-4">
+            <div class="col-lg-9">
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted fw-bold">SELECT SUPPLIER</label>
+                                <select class="form-select rounded-3" @bind="selectedSupplierName">
+                                    <option value="" disabled selected>Select...</option>
+                                    @if (RealSuppliers != null)
+                                    {
+                                        @foreach (var s in RealSuppliers)
+                                        {
+                                            <option value="@s.CompanyName">@s.CompanyName</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted fw-bold">PO NUMBER</label>
+                                <input type="text" class="form-control" value="@generatedPONumber" readonly style="background-color: #f8f9fa;" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted fw-bold">EXPECTED DATE</label>
+                                <input type="date" class="form-control" @bind="expectedDate" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted fw-bold">STATUS</label>
+                                <span class="badge bg-warning text-dark d-block p-2 rounded-3">Draft</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4" style="border-left: 5px solid #020412 !important;">
+                    <div class="card-body p-4">
+                        <div class="row align-items-end g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted fw-bold">PRODUCT SEARCH</label>
+                                <input class="form-control" list="productOptions" placeholder="Type product..." @bind="tempProductName" @oninput="OnProductInput" />
+                                <datalist id="productOptions">
+                                    @if(RealProducts != null)
+                                    {
+                                        @foreach (var p in RealProducts) { <option value="@p.Name">@p.SKU</option> }
+                                    }
+                                </datalist>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted fw-bold">VARIANT</label>
+                                <select class="form-select" @bind="tempVariant">
+                                    <option value="" disabled selected>Select...</option>
+                                    @foreach (var v in currentAvailableVariants) { <option value="@v">@v</option> }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted fw-bold">QTY</label>
+                                <input type="number" class="form-control" min="1" @bind="tempQty" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small text-muted fw-bold">COST</label>
+                                <input type="number" class="form-control" step="0.01" @bind="tempCost" />
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-navy w-100 py-2 fw-bold" @onclick="AddToGrid">+ ADD</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Product</th>
+                                    <th>Variant</th>
+                                    <th>Qty</th>
+                                    <th>Cost</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in OrderItems)
+                                {
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-navy">@item.ProductName</td>
+                                        <td>@item.Variant</td>
+                                        <td>@item.Qty</td>
+                                        <td>@item.UnitCost.ToString("N2")</td>
+                                        <td class="fw-bold">@((item.Qty * item.UnitCost).ToString("N2"))</td>
+                                        <td><button class="btn btn-sm btn-outline-danger" @onclick="() => OrderItems.Remove(item)">X</button></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 position-sticky" style="top: 20px;">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-4">Summary</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="fw-bold text-navy h5 mb-0">Total</span>
+                            <span class="fw-bold text-navy h4 mb-0">₱ @OrderItems.Sum(i => i.Qty * i.UnitCost).ToString("N2")</span>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-navy py-2 rounded-pill shadow-sm" @onclick="CreateOrder">
+                                <i class="bi bi-check-lg me-2"></i>Create Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (activeView == "suppliers")
+    {
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold text-navy mb-0">Registered Vendors</h6>
+                <button class="btn btn-sm btn-navy rounded-pill" @onclick="() => showSupplierModal = true"><i class="bi bi-plus-lg me-1"></i> New</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="ps-4">Company</th>
+                            <th>Contact</th>
+                            <th>Email/Phone</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(RealSuppliers != null)
+                        {
+                            @foreach (var s in RealSuppliers)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-navy">@s.CompanyName</td>
+                                    <td>@s.ContactPerson</td>
+                                    <td>@s.Email<br/><small class="text-muted">@s.Phone</small></td>
+                                    <td>@s.Category</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (activeView == "receiving")
+    {
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-bottom-0 py-3">
+                <h6 class="fw-bold text-navy mb-0">Expected Shipments</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">PO #</th>
+                            <th>Supplier</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(RealOrders != null)
+                        {
+                            @foreach (var po in RealOrders)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-navy">@po.PONumber</td>
+                                    <td>@po.SupplierName</td>
+                                    <td>@po.OrderDate.ToShortDateString()</td>
+                                    <td>@po.TotalItems units</td>
+                                    <td>
+                                        <span class="badge @(po.Status == "Received" ? "bg-success" : "bg-warning text-dark") rounded-pill">@po.Status</span>
+                                    </td>
+                                    <td>
+                                        @if(po.Status != "Received")
+                                        {
+                                            <button class="btn btn-navy btn-sm rounded-pill" @onclick="() => ReceiveOrder(po)">Receive</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@if (showSupplierModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">Add Supplier</h5>
+                    <button type="button" class="btn-close" @onclick="() => showSupplierModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" @bind="newSupplier.CompanyName" placeholder="Company Name" />
+                    <input class="form-control mb-2" @bind="newSupplier.ContactPerson" placeholder="Contact Person" />
+                    <input class="form-control mb-2" @bind="newSupplier.Email" placeholder="Email" />
+                    <input class="form-control mb-2" @bind="newSupplier.Phone" placeholder="Phone" />
+                    <select class="form-select" @bind="newSupplier.Category">
+                        <option>Textiles</option><option>Raw Materials</option><option>Finished Goods</option>
+                    </select>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button class="btn btn-navy rounded-pill w-100" @onclick="SaveSupplier">Save Supplier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .text-navy { color: #020412; }
+    .bg-navy { background-color: #020412; color: white; }
+    .btn-navy:hover { background-color: #0c006b; color: white; }
+    .modal-backdrop { background-color: rgba(0,0,0,0.5); position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:1040; }
+</style>
+
+@code {
+    private string activeView = "main";
+    private bool showSupplierModal = false;
+
+    // DATA LISTS
+    private List<Product>? RealProducts;
+    private List<Supplier>? RealSuppliers;
+    private List<PurchaseOrder>? RealOrders;
+
+    // NEW ORDER VARIABLES
+    private string generatedPONumber = "PO-" + DateTime.Now.ToString("MMdd-HHmm");
+    private DateTime expectedDate = DateTime.Now.AddDays(7);
+    private string selectedSupplierName = "";
+    private List<PurchaseOrderItem> OrderItems = new List<PurchaseOrderItem>();
+
+    // TEMP ITEM VARIABLES
+    private string tempProductName = "";
+    private string tempVariant = "";
+    private int tempQty = 1;
+    private decimal tempCost = 0;
+    private List<string> currentAvailableVariants = new();
+
+    // NEW SUPPLIER MODEL
+    private Supplier newSupplier = new Supplier();
+
+    // INITIALIZATION
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllData();
+    }
+
+    private async Task LoadAllData()
+    {
+        try 
+        {
+            RealProducts = await InventoryService.GetAllProductsAsync();
+            RealSuppliers = await PurchaseService.GetSuppliersAsync();
+            RealOrders = await PurchaseService.GetOrdersAsync();
+        }
+        catch { }
+    }
+
+    // --- LOGIC: PRODUCT SEARCH ---
+    private void OnProductInput(ChangeEventArgs e)
+    {
+        string input = e.Value?.ToString() ?? "";
+        tempProductName = input;
+        
+        if (RealProducts != null)
+        {
+            var p = RealProducts.FirstOrDefault(x => x.Name.Equals(input, StringComparison.OrdinalIgnoreCase));
+            if (p != null) 
+            {
+                tempCost = p.Price * 0.7m; // Default cost assumption
+                currentAvailableVariants = !string.IsNullOrEmpty(p.Variants) ? p.Variants.Split(',').Select(v => v.Trim()).ToList() : new List<string> { "Standard" };
+                tempVariant = "";
+            }
+        }
+    }
+
+    private void AddToGrid()
+    {
+        if (string.IsNullOrWhiteSpace(tempProductName) || tempQty <= 0) return;
+        OrderItems.Add(new PurchaseOrderItem { ProductName = tempProductName, Variant = string.IsNullOrEmpty(tempVariant) ? "Standard" : tempVariant, Qty = tempQty, UnitCost = tempCost });
+        tempProductName = ""; tempVariant = ""; tempQty = 1; tempCost = 0;
+    }
+
+    // --- LOGIC: CREATE ORDER ---
+    private async Task CreateOrder()
+    {
+        if (OrderItems.Count == 0 || string.IsNullOrEmpty(selectedSupplierName)) return;
+
+        var newOrder = new PurchaseOrder
+        {
+            PONumber = generatedPONumber,
+            SupplierName = selectedSupplierName,
+            OrderDate = expectedDate,
+            TotalItems = OrderItems.Sum(i => i.Qty),
+            TotalCost = OrderItems.Sum(i => i.Qty * i.UnitCost),
+            Status = "Pending"
+        };
+
+        await PurchaseService.CreateOrderAsync(newOrder, OrderItems);
+        
+        await JS.InvokeVoidAsync("alert", "Order Created Successfully!");
+        OrderItems.Clear();
+        generatedPONumber = "PO-" + DateTime.Now.ToString("MMdd-HHmm"); // New PO Number
+        await LoadAllData();
+        activeView = "receiving";
+    }
+
+    // --- LOGIC: SUPPLIER ---
+    private async Task SaveSupplier()
+    {
+        if (!string.IsNullOrEmpty(newSupplier.CompanyName))
+        {
+            await PurchaseService.AddSupplierAsync(newSupplier);
+            newSupplier = new Supplier();
+            showSupplierModal = false;
+            await LoadAllData();
+        }
+    }
+
+    // --- LOGIC: RECEIVING ---
+    private async Task ReceiveOrder(PurchaseOrder po)
+    {
+        await PurchaseService.ReceiveOrderAsync(po);
+        await LoadAllData();
+    }
+}
