@@ -23,6 +23,8 @@ namespace MDAS.Data
         public DbSet<Employee> Employees { get; set; }
         public DbSet<PayrollSetting> PayrollSettings { get; set; }
         public DbSet<AttendanceLog> AttendanceLogs { get; set; }
+
+        public DbSet<EmployeePerformance> EmployeePerformance { get; set; }
     }
 
 
@@ -165,6 +167,15 @@ namespace MDAS.Data
         public DateTime TimeIn { get; set; }
         public DateTime? TimeOut { get; set; }
         public decimal HoursWorked { get; set; }
+    }
+
+    public class EmployeePerformance
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
+        public int Rating { get; set; } // 1-10
+        public string Notes { get; set; } = "";
     }
 }
 

@@ -41,6 +41,7 @@ namespace MDAS
             builder.Services.AddScoped<ExpenseService>();
             builder.Services.AddScoped<PayrollService>();
             builder.Services.AddScoped<FinanceService>();
+            builder.Services.AddScoped<EmployeeService>();
 
             var app = builder.Build();
 

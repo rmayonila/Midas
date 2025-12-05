@@ -1,186 +1,200 @@
 ﻿@page "/employees"
 @using MDAS.Components.Layout
+@using MDAS.Data
+@inject EmployeeService EmployeeService
+@inject IJSRuntime JS
 @layout AdminLayout
 
-<div class="container-fluid p-0">
+<PageTitle>Midas - Employees</PageTitle>
+
+<div class="container-fluid p-4">
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Employees</h3>
-            <span class="text-secondary small">The Master Database</span>
+            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Workforce Management</h3>
+            <span class="text-secondary small">Staff & Performance Tracking</span>
         </div>
-        <div>
-            <div class="btn-group bg-white border shadow-sm">
-                <button class="btn btn-sm @(CurrentView == "Staff" ? "btn-primary" : "btn-light text-secondary")"
-                        @onclick='() => CurrentView = "Staff"'>
-                    <i class="bi bi-people-fill"></i> Staff List
-                </button>
-                <button class="btn btn-sm @(CurrentView == "Attendance" ? "btn-primary" : "btn-light text-secondary")"
-                        @onclick='() => CurrentView = "Attendance"'>
-                    <i class="bi bi-clock-history"></i> Attendance
-                </button>
-            </div>
-        </div>
+        <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="OpenAddModal">
+            <i class="bi bi-person-plus-fill me-2"></i>Add Employee
+        </button>
     </div>
 
-    @if (CurrentView == "Staff")
-    {
-        <div class="card shadow-sm border-0 animated-fade">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0 text-primary"><i class="bi bi-person-lines-fill"></i> Active Personnel</h5>
-                <button class="btn btn-primary btn-sm" style="background-color: #02001E;" @onclick="OpenAddEmployeeModal">
-                    <i class="bi bi-person-plus-fill"></i> Add Employee
-                </button>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4">ID</th>
-                            <th>Name</th>
-                            <th>Role / Position</th>
-                            <th>Daily Rate</th>
-                            <th>Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var emp in StaffList)
-                        {
-                            <tr>
-                                <td class="ps-4 text-muted small">#@emp.Id</td>
-                                <td class="fw-bold">@emp.Name</td>
-                                <td>@emp.Role</td>
-                                <td>₱@emp.DailyRate.ToString("N2")</td>
-                                <td>
-                                    <span class="badge @(emp.IsActive ? "bg-success" : "bg-secondary") rounded-pill">
-                                        @(emp.IsActive ? "Active" : "On Leave")
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-danger" title="Remove" @onclick="() => DeleteEmployee(emp)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-
-    @if (CurrentView == "Attendance")
-    {
-        <div class="card shadow-sm border-0 animated-fade">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0 text-primary"><i class="bi bi-calendar-check"></i> Daily Time Record</h5>
-                <button class="btn btn-success btn-sm" @onclick="OpenAttendanceModal">
-                    <i class="bi bi-stopwatch"></i> Log Time
-                </button>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-striped align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4">Date</th>
-                            <th>Employee</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Hours Worked</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var log in AttendanceLogs)
-                        {
-                            <tr>
-                                <td class="ps-4">@log.Date.ToString("MMM dd")</td>
-                                <td class="fw-bold">@log.EmployeeName</td>
-                                <td class="text-success">@log.TimeIn.ToString("hh:mm tt")</td>
-                                <td class="text-danger">@log.TimeOut.ToString("hh:mm tt")</td>
-                                <td class="fw-bold">@log.TotalHours.ToString("0.0") hrs</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h5 class="fw-bold text-navy mb-0">Active Personnel</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Name / Role</th>
+                                    <th>Status</th>
+                                    <th>Avg. Performance</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @* FIX: Changed 'Employees' to 'EmployeesList' *@
+                                @if (EmployeesList == null)
+                                {
+                                    <tr><td colspan="4" class="text-center py-5 text-muted">Loading...</td></tr>
+                                }
+                                else
+                                {
+                                    @* FIX: Changed loop variable source *@
+                                    @foreach (var emp in EmployeesList)
+                                    {
+                                        <tr style="cursor:pointer;" @onclick="() => SelectEmployee(emp)">
+                                            <td class="ps-4">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width:40px; height:40px; font-weight:bold; color:#02001E;">
+                                                        @emp.FullName.Substring(0, 1)
+                                                    </div>
+                                                    <div>
+                                                        <span class="fw-bold d-block text-navy">@emp.FullName</span>
+                                                        <small class="text-muted">@emp.Role</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-success-subtle text-success rounded-pill px-3">@emp.Status</span></td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress flex-grow-1" style="height: 6px; width: 100px;">
+                                                        <div class="progress-bar bg-warning" role="progressbar"
+                                                             style="width: @(GetRatingPercentage(emp.Id))%"></div>
+                                                    </div>
+                                                    <span class="ms-2 small fw-bold">@GetRatingScore(emp.Id)</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <button class="btn btn-sm btn-outline-secondary rounded-circle" @onclick:stopPropagation="true" @onclick="() => OpenPerformanceModal(emp)">
+                                                    <i class="bi bi-star-fill"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-    }
 
+        <div class="col-lg-4">
+            @if (SelectedEmployee != null)
+            {
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <div class="avatar-circle mx-auto mb-3">@SelectedEmployee.FullName.Substring(0, 1)</div>
+                            <h5 class="fw-bold text-navy mb-0">@SelectedEmployee.FullName</h5>
+                            <span class="text-muted small">@SelectedEmployee.Role • ₱@SelectedEmployee.HourlyRate/hr</span>
+                        </div>
+
+                        <hr class="text-secondary opacity-25" />
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-navy mb-0">Performance Log</h6>
+                            <button class="btn btn-sm btn-light text-primary fw-bold" @onclick="() => OpenPerformanceModal(SelectedEmployee)">+ Log Today</button>
+                        </div>
+
+                        <div class="performance-list">
+                            @if (SelectedPerformanceLogs != null && SelectedPerformanceLogs.Count > 0)
+                            {
+                                @foreach (var log in SelectedPerformanceLogs)
+                                {
+                                    <div class="d-flex mb-3 align-items-start">
+                                        <div class="me-3 text-center" style="width: 40px;">
+                                            <span class="d-block fw-bold text-navy">@log.Date.ToString("dd")</span>
+                                            <small class="text-muted" style="font-size:10px;">@log.Date.ToString("MMM")</small>
+                                        </div>
+                                        <div class="bg-light p-2 rounded-3 flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <span class="badge @GetBadgeColor(log.Rating)">@log.Rating / 10</span>
+                                            </div>
+                                            <p class="small text-muted mb-0 mt-1">@log.Notes</p>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-center text-muted small py-4">No performance logs found.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-sm border-0 rounded-4 h-100 d-flex align-items-center justify-content-center text-center p-5">
+                    <i class="bi bi-person-badge display-4 text-light mb-3"></i>
+                    <p class="text-muted">Select an employee from the list<br>to view performance details.</p>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-@if (IsEmployeeModalOpen)
+@if (IsAddModalOpen)
 {
     <div class="modal-backdrop show"></div>
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Register New Employee</h5>
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">New Employee</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" class="form-control" @bind="NewEmployee.Name" placeholder="e.g. Juan Dela Cruz" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Position</label>
-                        <select class="form-select" @bind="NewEmployee.Role">
-                            <option value="Cashier">Cashier</option>
-                            <option value="Manager">Manager</option>
-                            <option value="Stock Clerk">Stock Clerk</option>
-                            <option value="Cleaner">Cleaner</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Daily Rate (₱)</label>
-                        <input type="number" class="form-control" @bind="NewEmployee.DailyRate" />
+                    <input class="form-control mb-3" placeholder="Full Name" @bind="NewEmployee.FullName" />
+                    <input class="form-control mb-3" placeholder="Role (e.g. Sales Associate)" @bind="NewEmployee.Role" />
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">₱</span>
+                        <input type="number" class="form-control" placeholder="Hourly Rate" @bind="NewEmployee.HourlyRate" />
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-primary" @onclick="SaveEmployee">Save Record</button>
+                <div class="modal-footer border-top-0">
+                    <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="SaveEmployee">Save Record</button>
                 </div>
             </div>
         </div>
     </div>
 }
 
-@if (IsAttendanceModalOpen)
+@if (IsPerfModalOpen && SelectedEmployee != null)
 {
     <div class="modal-backdrop show"></div>
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Log Attendance</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header bg-navy text-white" style="background-color:#02001E;">
+                    <h5 class="modal-title">Daily Evaluation: @SelectedEmployee.FullName</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Employee</label>
-                        <select class="form-select" @bind="NewLog.EmployeeName">
-                            <option value="" disabled selected>Select Employee...</option>
-                            @foreach (var emp in StaffList)
-                            {
-                                <option value="@emp.Name">@emp.Name</option>
-                            }
-                        </select>
+                <div class="modal-body text-center p-4">
+                    <h6 class="text-muted mb-3">Rate Today's Performance (1-10)</h6>
+
+                    <div class="d-flex justify-content-center gap-2 mb-4">
+                        @for (int i = 1; i <= 10; i++)
+                        {
+                            var score = i;
+                            <button class="btn btn-outline-primary rounded-circle"
+                                    style="width:35px; height:35px; padding:0; @(NewPerformance.Rating == score ? "background-color:#02001E; color:white; border-color:#02001E;" : "")"
+                                    @onclick="() => NewPerformance.Rating = score">
+                                @i
+                            </button>
+                        }
                     </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label">Time In</label>
-                            <input type="time" class="form-control" @bind="NewLog.TimeIn" />
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label">Time Out</label>
-                            <input type="time" class="form-control" @bind="NewLog.TimeOut" />
-                        </div>
-                    </div>
+
+                    <textarea class="form-control" rows="3" placeholder="Add notes (e.g. Excellent handling of customer complaint...)" @bind="NewPerformance.Notes"></textarea>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button class="btn btn-success" @onclick="SaveAttendance">Save Log</button>
+                <div class="modal-footer border-top-0">
+                    <button class="btn text-white rounded-pill px-4 w-100" style="background-color: #02001E;" @onclick="SavePerformance">Submit Log</button>
                 </div>
             </div>
         </div>
@@ -188,113 +202,146 @@
 }
 
 <style>
+    .text-navy {
+        color: #02001E;
+    }
+
+    .bg-navy {
+        background-color: #02001E;
+    }
+
+    .avatar-circle {
+        width: 80px;
+        height: 80px;
+        background-color: #02001E;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
     .modal-backdrop {
         background-color: rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1040;
     }
 
-    .animated-fade {
-        animation: fadeIn 0.3s ease-in;
-    }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(5px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .performance-list {
+        max-height: 400px;
+        overflow-y: auto;
     }
 </style>
 
 @code {
-    // --- MODELS ---
-    public class Employee
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
-        public string Role { get; set; } = "Cashier";
-        public decimal DailyRate { get; set; }
-        public bool IsActive { get; set; } = true;
-    }
+    // FIX: Renamed 'Employees' to 'EmployeesList' to avoid error
+    private List<Employee>? EmployeesList;
+    private Dictionary<int, double> AvgRatings = new();
 
-    public class AttendanceRecord
-    {
-        public DateTime Date { get; set; } = DateTime.Now;
-        public string EmployeeName { get; set; } = "";
-        public DateTime TimeIn { get; set; } = DateTime.Today.AddHours(8); // Default 8 AM
-        public DateTime TimeOut { get; set; } = DateTime.Today.AddHours(17); // Default 5 PM
-
-        public double TotalHours => (TimeOut - TimeIn).TotalHours > 0 ? (TimeOut - TimeIn).TotalHours : 0;
-    }
-
-    // --- STATE ---
-    private string CurrentView = "Staff"; // "Staff" or "Attendance"
-    private bool IsEmployeeModalOpen = false;
-    private bool IsAttendanceModalOpen = false;
+    private Employee? SelectedEmployee;
+    private List<EmployeePerformance>? SelectedPerformanceLogs;
 
     private Employee NewEmployee = new Employee();
-    private AttendanceRecord NewLog = new AttendanceRecord();
+    private EmployeePerformance NewPerformance = new EmployeePerformance();
 
-    // --- DUMMY DATA ---
-    private List<Employee> StaffList = new List<Employee>
+    private bool IsAddModalOpen = false;
+    private bool IsPerfModalOpen = false;
+
+    protected override async Task OnInitializedAsync()
     {
-        new Employee { Id = 101, Name = "Cherylou Hong", Role = "Manager", DailyRate = 1200 },
-        new Employee { Id = 102, Name = "Mark Santos", Role = "Stock Clerk", DailyRate = 600 },
-        new Employee { Id = 103, Name = "Anna Lee", Role = "Cashier", DailyRate = 650 }
-    };
-
-    private List<AttendanceRecord> AttendanceLogs = new List<AttendanceRecord>
-    {
-        new AttendanceRecord { Date = DateTime.Now.AddDays(-1), EmployeeName = "Mark Santos", TimeIn = DateTime.Today.AddHours(8), TimeOut = DateTime.Today.AddHours(17) },
-        new AttendanceRecord { Date = DateTime.Now.AddDays(-1), EmployeeName = "Anna Lee", TimeIn = DateTime.Today.AddHours(8).AddMinutes(15), TimeOut = DateTime.Today.AddHours(17) }
-    };
-
-    // --- FUNCTIONS ---
-
-    private void OpenAddEmployeeModal()
-    {
-        NewEmployee = new Employee(); // Reset
-        IsEmployeeModalOpen = true;
+        await LoadData();
     }
 
-    private void OpenAttendanceModal()
+    private async Task LoadData()
     {
-        NewLog = new AttendanceRecord(); // Reset
-        IsAttendanceModalOpen = true;
+        EmployeesList = await EmployeeService.GetEmployeesAsync();
+
+        // Pre-fetch ratings
+        if (EmployeesList != null)
+        {
+            foreach (var e in EmployeesList)
+            {
+                if (!AvgRatings.ContainsKey(e.Id))
+                {
+                    AvgRatings[e.Id] = await EmployeeService.GetAverageRatingAsync(e.Id);
+                }
+            }
+        }
+    }
+
+    private async Task SelectEmployee(Employee emp)
+    {
+        SelectedEmployee = emp;
+        SelectedPerformanceLogs = await EmployeeService.GetPerformanceAsync(emp.Id);
+    }
+
+    // --- MODAL CONTROLS ---
+    private void OpenAddModal()
+    {
+        NewEmployee = new Employee();
+        IsAddModalOpen = true;
+    }
+
+    private void OpenPerformanceModal(Employee emp)
+    {
+        SelectedEmployee = emp;
+        NewPerformance = new EmployeePerformance { EmployeeId = emp.Id, Date = DateTime.Now, Rating = 8 };
+        IsPerfModalOpen = true;
     }
 
     private void CloseModals()
     {
-        IsEmployeeModalOpen = false;
-        IsAttendanceModalOpen = false;
+        IsAddModalOpen = false;
+        IsPerfModalOpen = false;
     }
 
-    private void SaveEmployee()
+    // --- SAVE LOGIC ---
+    private async Task SaveEmployee()
     {
-        if (!string.IsNullOrWhiteSpace(NewEmployee.Name))
+        if (!string.IsNullOrEmpty(NewEmployee.FullName))
         {
-            NewEmployee.Id = StaffList.Count > 0 ? StaffList.Max(e => e.Id) + 1 : 101; // Auto ID
-            StaffList.Add(NewEmployee);
+            await EmployeeService.SaveEmployeeAsync(NewEmployee);
+            await LoadData();
             CloseModals();
         }
     }
 
-    private void SaveAttendance()
+    private async Task SavePerformance()
     {
-        if (!string.IsNullOrWhiteSpace(NewLog.EmployeeName))
+        if (NewPerformance.Rating > 0)
         {
-            // Fix the Date part of TimeIn/TimeOut to match today for calculation safety
-            NewLog.Date = DateTime.Now;
-            AttendanceLogs.Insert(0, NewLog);
+            await EmployeeService.AddPerformanceLogAsync(NewPerformance);
+
+            if (SelectedEmployee != null)
+            {
+                AvgRatings[SelectedEmployee.Id] = await EmployeeService.GetAverageRatingAsync(SelectedEmployee.Id);
+                SelectedPerformanceLogs = await EmployeeService.GetPerformanceAsync(SelectedEmployee.Id);
+            }
             CloseModals();
         }
     }
 
-    private void DeleteEmployee(Employee emp)
+    // --- HELPERS ---
+    private double GetRatingPercentage(int empId)
     {
-        StaffList.Remove(emp);
+        return AvgRatings.ContainsKey(empId) ? (AvgRatings[empId] * 10) : 0;
+    }
+
+    private string GetRatingScore(int empId)
+    {
+        return AvgRatings.ContainsKey(empId) ? AvgRatings[empId].ToString("0.0") : "-";
+    }
+
+    private string GetBadgeColor(int rating)
+    {
+        if (rating >= 8) return "bg-success";
+        if (rating >= 5) return "bg-warning text-dark";
+        return "bg-danger";
     }
 }
