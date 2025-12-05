@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
-using MDAS.Data;
+using MDAS.Data; 
 
 namespace MDAS
 {
@@ -20,23 +20,30 @@ namespace MDAS
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
-            // REMOVED THE AddDebug LINE CAUSING ERRORS
+            // Note: If 'AddDebug' is still red, delete the line below.
+            builder.Logging.AddDebug();
 #endif
 
-            // 1. DATABASE CONNECTION
+            // DATABASE CONNECTION
             string connectionString = @"Server=LAPTOP-9GJ16B8S\SQLEXPRESS;Database=ERP_MIDAS;Trusted_Connection=True;TrustServerCertificate=True;";
 
-            // 2. REGISTER DB CONTEXT
+            // REGISTER DB
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            // 3. REGISTER SERVICES
-            builder.Services.AddScoped<InventoryServices>();
+            // REGISTER SERVICES
+            // IMPORTANT: If this line is still red, go to your Data folder and check 
+            // if the file is named "InventoryService.cs" (Singular) or "InventoryServices.cs" (Plural).
+            // Make them match here!
+            builder.Services.AddScoped<InventoryService>();
             builder.Services.AddScoped<PurchaseService>();
+            builder.Services.AddScoped<SalesService>();
+            builder.Services.AddScoped<ExpenseService>();
+            builder.Services.AddScoped<PayrollService>();
 
             var app = builder.Build();
 
-            // 4. ENSURE DATABASE IS CREATED
+            // CREATE DB AUTOMATICALLY
             using (var scope = app.Services.CreateScope())
             {
                 try
@@ -46,7 +53,8 @@ namespace MDAS
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Database Error: {ex.Message}");
+                    // This prevents the app from crashing on startup if DB fails
+                    Console.WriteLine($"DB Error: {ex.Message}");
                 }
             }
 

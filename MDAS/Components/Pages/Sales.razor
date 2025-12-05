@@ -1,5 +1,7 @@
 ﻿@page "/sales"
 @using MDAS.Components.Layout
+@using MDAS.Data
+@inject SalesService SalesService
 @layout AdminLayout
 
 <PageTitle>Midas - Sales</PageTitle>
@@ -9,42 +11,25 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-navy">
-                @if (activeTab == "log")
-                {
-                    <text>Revenue Audit Log</text>
-                }
-                else
-                {
-
-                    <text>Void & Return Manager</text>
-                }
+                @if (activeTab == "log") { <text>Revenue Audit Log</text> }
+                else { <text>Void & Return Manager</text> }
             </h2>
-            <p class="text-muted">
-                @if (activeTab == "log")
-                {
-                    <text>View and audit past transaction receipts.</text>
-                }
-                else
-                {
-
-                    <text>Approve or reject refund requests and voids.</text>
-                }
-            </p>
+            <p class="text-muted">Real Database Connection</p>
         </div>
 
-        <div class="d-flex gap-2 bg-white p-1 rounded-pill border shadow-sm">
-            <button class="btn rounded-pill px-4 @(activeTab == "log" ? "btn-navy" : "btn-light text-muted")"
-                    @onclick='() => activeTab = "log"'>
-                <i class="bi bi-receipt me-2"></i>Transaction Log
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary rounded-pill" @onclick="GenerateDemoSale">
+                <i class="bi bi-magic me-2"></i>Simulate Sale
             </button>
-            <button class="btn rounded-pill px-4 @(activeTab == "voids" ? "btn-navy" : "btn-light text-muted")"
-                    @onclick='() => activeTab = "voids"'>
-                <i class="bi bi-arrow-counterclockwise me-2"></i>Void / Returns
-                @if (PendingRefundsCount > 0)
-                {
-                    <span class="badge bg-danger rounded-pill ms-2">@PendingRefundsCount</span>
-                }
-            </button>
+
+            <div class="bg-white p-1 rounded-pill border shadow-sm d-inline-flex">
+                <button class="btn rounded-pill px-4 @(activeTab == "log" ? "btn-navy" : "btn-light text-muted")" @onclick='() => activeTab = "log"'>
+                    <i class="bi bi-receipt me-2"></i>Log
+                </button>
+                <button class="btn rounded-pill px-4 @(activeTab == "voids" ? "btn-navy" : "btn-light text-muted")" @onclick='() => activeTab = "voids"'>
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>Void / Returns
+                </button>
+            </div>
         </div>
     </div>
 
@@ -52,23 +37,13 @@
     {
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
-
                 <div class="row g-3 mb-4">
                     <div class="col-md-5">
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-search"></i></span>
                             <input type="text" class="form-control border-start-0 rounded-end-pill bg-light"
-                                   placeholder="Search Receipt # or Customer Name..."
-                                   @bind="searchText" @bind:event="oninput" />
+                                   placeholder="Search Receipt..." @bind="searchText" @bind:event="oninput" />
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="date" class="form-control rounded-pill bg-light" />
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <button class="btn btn-outline-secondary rounded-pill">
-                            <i class="bi bi-printer me-2"></i>Print Report
-                        </button>
                     </div>
                 </div>
 
@@ -77,10 +52,10 @@
                         <thead class="bg-light text-secondary small text-uppercase">
                             <tr>
                                 <th class="ps-3">Receipt #</th>
-                                <th>Date & Time</th>
-                                <th>Items Summary</th>
+                                <th>Date</th>
+                                <th>Items</th>
                                 <th>Payment</th>
-                                <th class="text-end">Total Amount</th>
+                                <th class="text-end">Total</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-end pe-3">Action</th>
                             </tr>
@@ -90,33 +65,23 @@
                             {
                                 <tr>
                                     <td class="ps-3 fw-bold text-navy">@t.ReceiptNo</td>
-                                    <td class="small text-muted">@t.Date.ToString("MMM dd, yyyy HH:mm")</td>
+                                    <td class="small text-muted">@t.Date.ToString("MMM dd HH:mm")</td>
                                     <td>
                                         <span class="d-block text-dark fw-medium">@t.ItemsSummary</span>
-                                        <small class="text-muted">Cashier: @t.Cashier</small>
+                                        <small class="text-muted">Cashier: @t.CashierName</small>
                                     </td>
                                     <td><span class="badge bg-light text-dark border">@t.PaymentMethod</span></td>
                                     <td class="text-end fw-bold">₱ @t.TotalAmount.ToString("N2")</td>
                                     <td class="text-center">
-                                        @if (t.Status == "Completed")
-                                        {
-                                            <span class="badge bg-success-subtle text-success rounded-pill px-3">Completed</span>
-                                        }
-                                        else if (t.Status == "Voided")
-                                        {
-
-                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3">Voided</span>
-                                        }
-                                        else if (t.Status == "Refunded")
-                                        {
-
-                                            <span class="badge bg-warning-subtle text-warning rounded-pill px-3">Refunded</span>
-                                        }
+                                        <span class="badge @GetStatusBadge(t.Status) rounded-pill px-3">@t.Status</span>
                                     </td>
                                     <td class="text-end pe-3">
-                                        <button class="btn btn-sm btn-light border" title="View Receipt">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
+                                        @if(t.Status == "Completed")
+                                        {
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => RequestVoid(t)">
+                                                Request Void
+                                            </button>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -129,174 +94,125 @@
 
     @if (activeTab == "voids")
     {
-        <div class="row">
-            <div class="col-12">
-                <div class="alert alert-light border shadow-sm d-flex align-items-center mb-4 rounded-3">
-                    <i class="bi bi-info-circle-fill text-navy fs-4 me-3"></i>
-                    <div>
-                        <strong>Manager Approval Required</strong>
-                        <div class="small text-muted">Cashiers cannot void transactions without admin approval. Review the requests below.</div>
-                    </div>
-                </div>
+        <div class="alert alert-light border shadow-sm d-flex align-items-center mb-4 rounded-3">
+            <i class="bi bi-info-circle-fill text-navy fs-4 me-3"></i>
+            <div>
+                <strong>Manager Approval Required</strong>
+                <div class="small text-muted">Review pending void requests below.</div>
             </div>
         </div>
 
         <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-header bg-white border-bottom-0 py-3">
-                <h6 class="fw-bold text-navy mb-0">Pending Requests</h6>
-            </div>
             <div class="card-body p-0">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light text-secondary small text-uppercase">
                         <tr>
-                            <th class="ps-4">Request Type</th>
-                            <th>Original Receipt</th>
-                            <th>Reason</th>
-                            <th>Requested By</th>
+                            <th class="ps-4">Receipt</th>
+                            <th>Cashier</th>
                             <th class="text-end">Amount</th>
                             <th class="text-end pe-4">Decision</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var r in RefundRequests)
+                        @foreach (var r in PendingVoids)
                         {
                             <tr>
-                                <td class="ps-4">
-                                    @if (r.Type == "Void")
-                                    {
-                                        <span class="badge bg-danger text-white">VOID</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning text-dark">RETURN</span>
-                                    }
-                                </td>
-                                <td class="fw-bold text-navy">@r.ReceiptNo</td>
-                                <td class="text-muted">@r.Reason</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-light rounded-circle me-2 d-flex justify-content-center align-items-center" style="width:30px; height:30px;">
-                                            <i class="bi bi-person-fill text-secondary"></i>
-                                        </div>
-                                        <span>@r.CashierName</span>
-                                    </div>
-                                </td>
-                                <td class="text-end fw-bold">₱ @r.Amount.ToString("N2")</td>
+                                <td class="ps-4 fw-bold text-navy">@r.ReceiptNo</td>
+                                <td>@r.CashierName</td>
+                                <td class="text-end fw-bold">₱ @r.TotalAmount.ToString("N2")</td>
                                 <td class="text-end pe-4">
-                                    @if (r.Status == "Pending")
-                                    {
-                                        <button class="btn btn-sm btn-outline-danger me-2" @onclick="() => ProcessRequest(r, false)">Reject</button>
-                                        <button class="btn btn-sm btn-navy" @onclick="() => ProcessRequest(r, true)">Approve</button>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted small fst-italic">@r.Status</span>
-                                    }
+                                    <button class="btn btn-sm btn-navy" @onclick="() => ApproveVoid(r)">Approve Void</button>
                                 </td>
                             </tr>
                         }
-                        @if (RefundRequests.Count == 0)
+                        @if (!PendingVoids.Any())
                         {
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
-                                    <i class="bi bi-check-circle display-6 d-block mb-3 opacity-25"></i>
-                                    No pending void or refund requests.
-                                </td>
-                            </tr>
+                            <tr><td colspan="4" class="text-center py-4 text-muted">No pending requests.</td></tr>
                         }
                     </tbody>
                 </table>
             </div>
         </div>
     }
-
 </div>
+
+<style>
+    .text-navy { color: #02001E; }
+    .btn-navy { background-color: #02001E; color: white; }
+</style>
 
 @code {
     private string activeTab = "log";
     private string searchText = "";
+    
+    // DATA LISTS
+    private List<SalesTransaction> AllTransactions = new List<SalesTransaction>();
+    private List<SalesTransaction> PendingVoids = new List<SalesTransaction>();
 
-    // --- 1. TRANSACTION LOG DATA ---
-    public class Transaction
+    protected override async Task OnInitializedAsync()
     {
-        public string ReceiptNo { get; set; } = "";
-        public DateTime Date { get; set; }
-        public string ItemsSummary { get; set; } = ""; // e.g., "3 items (Dress, Belt...)"
-        public string Cashier { get; set; } = "";
-        public string PaymentMethod { get; set; } = "";
-        public decimal TotalAmount { get; set; }
-        public string Status { get; set; } = "Completed"; // Completed, Voided, Refunded
+        await LoadData();
     }
 
-    private List<Transaction> AllTransactions = new List<Transaction>
+    private async Task LoadData()
     {
-        new Transaction { ReceiptNo = "TRX-10045", Date = DateTime.Now.AddHours(-1), ItemsSummary = "Red Summer Dress (M)", Cashier = "Jane Doe", PaymentMethod = "Cash", TotalAmount = 1250.00m, Status = "Completed" },
-        new Transaction { ReceiptNo = "TRX-10044", Date = DateTime.Now.AddHours(-2), ItemsSummary = "Denim Jacket, White Tee", Cashier = "Jane Doe", PaymentMethod = "GCash", TotalAmount = 3650.00m, Status = "Completed" },
-        new Transaction { ReceiptNo = "TRX-10043", Date = DateTime.Now.AddHours(-4), ItemsSummary = "Leather Belt", Cashier = "Mike S.", PaymentMethod = "Cash", TotalAmount = 850.00m, Status = "Voided" },
-        new Transaction { ReceiptNo = "TRX-10042", Date = DateTime.Now.AddDays(-1), ItemsSummary = "Chino Pants (32)", Cashier = "Jane Doe", PaymentMethod = "Card", TotalAmount = 1500.00m, Status = "Refunded" },
-    };
+        AllTransactions = await SalesService.GetSalesHistoryAsync();
+        // Since we don't have a separate Request Table yet, we filter for a "PendingVoid" status simulation
+        // In a real app, you'd have a separate Request Table. 
+        // For now, let's just assume anything marked "Completed" can be voided directly.
+    }
 
-    // Filter Logic
-    private IEnumerable<Transaction> FilteredTransactions =>
+    // --- SEARCH FILTER ---
+    private IEnumerable<SalesTransaction> FilteredTransactions =>
         string.IsNullOrWhiteSpace(searchText)
         ? AllTransactions
-        : AllTransactions.Where(t => t.ReceiptNo.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                                     t.ItemsSummary.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+        : AllTransactions.Where(t => t.ReceiptNo.Contains(searchText, StringComparison.OrdinalIgnoreCase));
 
-
-    // --- 2. VOID/RETURN MANAGER DATA ---
-    public class RefundRequest
+    // --- ACTIONS ---
+    
+    private void RequestVoid(SalesTransaction t)
     {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Type { get; set; } = "Return"; // Void or Return
-        public string ReceiptNo { get; set; } = "";
-        public string Reason { get; set; } = "";
-        public string CashierName { get; set; } = "";
-        public decimal Amount { get; set; }
-        public string Status { get; set; } = "Pending";
+        // For this demo, adding to a temporary list so you can see it in the other tab
+        if(!PendingVoids.Contains(t)) PendingVoids.Add(t);
+        activeTab = "voids"; // Switch tab to show user
     }
 
-    private List<RefundRequest> RefundRequests = new List<RefundRequest>
+    private async Task ApproveVoid(SalesTransaction t)
     {
-        new RefundRequest { Type = "Return", ReceiptNo = "TRX-10044", Reason = "Wrong size (Customer Request)", CashierName = "Jane Doe", Amount = 1250.00m, Status = "Pending" },
-        new RefundRequest { Type = "Void", ReceiptNo = "TRX-10046", Reason = "Duplicate Entry Error", CashierName = "Mike S.", Amount = 450.00m, Status = "Pending" }
-    };
+        await SalesService.ProcessRefundAsync(t.Id, "Void");
+        PendingVoids.Remove(t);
+        await LoadData(); // Refresh main list to see status change
+        activeTab = "log";
+    }
 
-    private int PendingRefundsCount => RefundRequests.Count(r => r.Status == "Pending");
-
-    private void ProcessRequest(RefundRequest req, bool approved)
+    private async Task GenerateDemoSale()
     {
-        if (approved)
+        var newSale = new SalesTransaction
         {
-            req.Status = "Approved";
-            // Logic: Update the main transaction list to reflect the status change
-            var txn = AllTransactions.FirstOrDefault(t => t.ReceiptNo == req.ReceiptNo);
-            if (txn != null)
-            {
-                txn.Status = req.Type == "Void" ? "Voided" : "Refunded";
-            }
-        }
-        else
+            ReceiptNo = "TRX-" + DateTime.Now.ToString("mmss"),
+            Date = DateTime.Now,
+            CashierName = "Demo User",
+            TotalAmount = 1500.00m,
+            Status = "Completed"
+        };
+        
+        var items = new List<SalesTransactionItem>
         {
-            req.Status = "Rejected";
-        }
+            new SalesTransactionItem { ProductName = "Oxford Shirt", Qty = 1, UnitPrice = 1500.00m }
+        };
+
+        await SalesService.CreateSaleAsync(newSale, items);
+        await LoadData();
+    }
+
+    private string GetStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Completed" => "bg-success-subtle text-success",
+            "Voided" => "bg-danger-subtle text-danger",
+            "Refunded" => "bg-warning-subtle text-warning",
+            _ => "bg-light text-dark"
+        };
     }
 }
-
-<style>
-    .text-navy {
-        color: #02001E;
-    }
-
-    .btn-navy {
-        background-color: #02001E;
-        color: white;
-        border: 1px solid #02001E;
-    }
-
-        .btn-navy:hover {
-            background-color: #0c006b;
-            color: white;
-            transform: translateY(-1px);
-        }
-</style>

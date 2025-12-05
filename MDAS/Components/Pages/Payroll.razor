@@ -1,194 +1,266 @@
 ﻿@page "/payroll"
 @using MDAS.Components.Layout
+@using MDAS.Data
+@inject PayrollService PayrollService
+@inject IJSRuntime JS
 @layout AdminLayout
 
-<div class="container-fluid p-0">
+<PageTitle>Midas - Payroll</PageTitle>
+
+<div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Payroll</h3>
-            <span class="text-secondary small">Compensation Engine</span>
+            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Payroll Management</h3>
         </div>
-        <div>
-            <button class="btn btn-primary" style="background-color: #02001E; border: none;" @onclick="OpenGeneratorModal">
-                <i class="bi bi-calculator-fill"></i> Run Payroll
+        <div class="d-flex gap-2">
+            <button class="btn rounded-pill px-4 @(activeTab == "dashboard" ? "btn-navy" : "btn-outline-secondary")" @onclick='() => activeTab = "dashboard"'>
+                Dashboard
+            </button>
+            <button class="btn rounded-pill px-4 @(activeTab == "employees" ? "btn-navy" : "btn-outline-secondary")" @onclick='() => activeTab = "employees"'>
+                Employees
+            </button>
+            <button class="btn rounded-pill px-4 @(activeTab == "settings" ? "btn-navy" : "btn-outline-secondary")" @onclick='() => activeTab = "settings"'>
+                Settings
             </button>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0 text-primary"><i class="bi bi-clock-history"></i> Payslip History</h5>
-            <div class="input-group" style="width: 250px;">
-                <input type="text" class="form-control form-control-sm" placeholder="Search employee..." />
-                <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i></button>
+    @if (activeTab == "dashboard")
+    {
+        <div class="row g-4">
+            <div class="col-lg-9">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 rounded-4 h-100 p-3">
+                            <h6 class="text-muted small fw-bold text-uppercase">Total Employees</h6>
+                            <h2 class="fw-bold text-navy mb-0">@EmployeesList?.Count</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 rounded-4 h-100 p-3">
+                            <h6 class="text-muted small fw-bold text-uppercase">Total Paid (YTD)</h6>
+                            <h2 class="fw-bold text-success mb-0">₱ @PayrollHistory?.Sum(x => x.NetPay).ToString("N2")</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-navy text-white shadow-sm border-0 rounded-4 h-100 p-3 d-flex align-items-center justify-content-center cursor-pointer" @onclick="OpenRunPayrollModal" style="cursor: pointer;">
+                            <h5 class="mb-0"><i class="bi bi-play-circle-fill me-2"></i> Run Payroll</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-header bg-white py-3"><h5 class="fw-bold text-navy mb-0">Payslip History</h5></div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Employee</th>
+                                    <th>Basic (Rate * Hrs)</th>
+                                    <th>Deductions</th>
+                                    <th class="text-end pe-4">Net Pay</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (PayrollHistory != null)
+                                {
+                                    @foreach (var p in PayrollHistory)
+                                    {
+                                        <tr>
+                                            <td class="ps-4">@p.PayDate.ToString("MMM dd")</td>
+                                            <td class="fw-bold">@p.EmployeeName</td>
+                                            <td>@p.BasicSalary.ToString("N2")</td>
+                                            <td class="text-danger">-@((p.DeductionTax + p.DeductionBenefits + p.DeductionLoans).ToString("N2"))</td>
+                                            <td class="text-end pe-4 fw-bold text-success">₱@p.NetPay.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-navy mb-3">Quick Rates</h6>
+                        <ul class="list-group list-group-flush small">
+                            <li class="list-group-item d-flex justify-content-between"><span>Tax</span> <strong>@CurrentSettings.TaxPercentage%</strong></li>
+                            <li class="list-group-item d-flex justify-content-between"><span>SSS</span> <strong>@CurrentSettings.SSSAmount</strong></li>
+                            <li class="list-group-item d-flex justify-content-between"><span>PhilHealth</span> <strong>@CurrentSettings.PhilHealthAmount</strong></li>
+                        </ul>
+                        <button class="btn btn-outline-secondary btn-sm w-100 mt-3" @onclick='() => activeTab = "settings"'>Edit Settings</button>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="card-body p-0">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4">Pay Date</th>
-                        <th>Employee</th>
-                        <th>Period Covered</th>
-                        <th class="text-end">Basic Pay</th>
-                        <th class="text-end">Net Pay</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (PayrollHistory.Count == 0)
-                    {
+    }
+
+    @if (activeTab == "employees")
+    {
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-navy mb-0">Employee Directory</h5>
+                <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="OpenAddEmployeeModal">
+                    <i class="bi bi-person-plus-fill me-2"></i>Add Employee
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">No payroll records generated yet.</td>
+                            <th class="ps-4">Name</th>
+                            <th>Role</th>
+                            <th>Hourly Rate</th>
+                            <th>Status</th>
                         </tr>
-                    }
-                    else
-                    {
-                        @foreach (var slip in PayrollHistory)
+                    </thead>
+                    <tbody>
+                        @if (EmployeesList != null)
                         {
-                            <tr>
-                                <td class="ps-4">@slip.PayDate.ToString("MMM dd, yyyy")</td>
-                                <td class="fw-bold">@slip.EmployeeName</td>
-                                <td class="small text-muted">@slip.PeriodStart.ToString("MM/dd") - @slip.PeriodEnd.ToString("MM/dd")</td>
-                                <td class="text-end text-muted">@slip.BasicSalary.ToString("N2")</td>
-                                <td class="text-end fw-bold text-success">₱@slip.NetPay.ToString("N2")</td>
-                                <td class="text-center">
-                                    <span class="badge bg-success rounded-pill">Paid</span>
-                                </td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary" title="View Slip" @onclick="() => ViewPayslip(slip)">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            @foreach (var emp in EmployeesList)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">@emp.FullName</td>
+                                    <td>@emp.Role</td>
+                                    <td>₱ @emp.HourlyRate.ToString("N2") / hr</td>
+                                    <td><span class="badge bg-success-subtle text-success rounded-pill">@emp.Status</span></td>
+                                </tr>
+                            }
                         }
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    }
+
+    @if (activeTab == "settings")
+    {
+        <div class="card shadow-sm border-0 rounded-4" style="max-width: 600px; margin: 0 auto;">
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <h5 class="fw-bold text-navy mb-0">Global Payroll Configuration</h5>
+                <p class="text-muted small mb-0">These deductions apply automatically to all employees.</p>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tax Rate (%)</label>
+                    <input type="number" class="form-control" @bind="CurrentSettings.TaxPercentage" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">SSS Contribution (Fixed Amount)</label>
+                    <input type="number" class="form-control" @bind="CurrentSettings.SSSAmount" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">PhilHealth Contribution (Fixed Amount)</label>
+                    <input type="number" class="form-control" @bind="CurrentSettings.PhilHealthAmount" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Pag-IBIG Contribution (Fixed Amount)</label>
+                    <input type="number" class="form-control" @bind="CurrentSettings.PagIbigAmount" />
+                </div>
+                <button class="btn btn-navy w-100 py-2" @onclick="SaveSettings">Save Changes</button>
+            </div>
+        </div>
+    }
 </div>
 
-@if (IsGeneratorOpen)
+@if (showEmployeeModal)
 {
     <div class="modal-backdrop show"></div>
     <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered"> <div class="modal-content">
-                <div class="modal-header text-white" style="background-color: #02001E;">
-                    <h5 class="modal-title"><i class="bi bi-calculator"></i> Payroll Generator</h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">New Employee</h5>
+                    <button type="button" class="btn-close" @onclick="() => showEmployeeModal = false"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Employee Name</label>
-                            <input type="text" class="form-control" @bind="CurrentEntry.EmployeeName" placeholder="e.g. John Doe" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Pay Date</label>
-                            <input type="date" class="form-control" @bind="CurrentEntry.PayDate" />
-                        </div>
-                        
-                        <div class="col-12 mt-4"><h6 class="border-bottom pb-2">Earnings</h6></div>
-                        <div class="col-md-6">
-                            <label class="form-label">Basic Salary</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" @bind="CurrentEntry.BasicSalary" @bind:after="CalculateTotals" />
-                            </div>
-                        </div>
-                         <div class="col-md-6">
-                            <label class="form-label">Allowances/Overtime</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₱</span>
-                                <input type="number" class="form-control" @bind="CurrentEntry.Allowances" @bind:after="CalculateTotals" />
-                            </div>
-                        </div>
-
-                        <div class="col-12 mt-3"><h6 class="border-bottom pb-2">Deductions</h6></div>
-                         <div class="col-md-4">
-                            <label class="form-label small">Tax / Withholding</label>
-                            <input type="number" class="form-control form-control-sm" @bind="CurrentEntry.DeductionTax" @bind:after="CalculateTotals" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">SSS/PhilHealth</label>
-                            <input type="number" class="form-control form-control-sm" @bind="CurrentEntry.DeductionBenefits" @bind:after="CalculateTotals" />
-                        </div>
-                         <div class="col-md-4">
-                            <label class="form-label small">Loan Repayment</label>
-                            <input type="number" class="form-control form-control-sm" @bind="CurrentEntry.DeductionLoans" @bind:after="CalculateTotals" />
-                        </div>
-                    </div>
-
-                    <div class="alert alert-light border mt-4 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <span>Gross Pay:</span>
-                            <span class="fw-bold">@GrossPayDisplay</span>
-                        </div>
-                        <div class="d-flex justify-content-between text-danger">
-                            <span>Total Deductions:</span>
-                            <span>- @TotalDeductionsDisplay</span>
-                        </div>
-                        <hr />
-                        <div class="d-flex justify-content-between fs-5">
-                            <span class="fw-bold text-dark">Net Pay:</span>
-                            <span class="fw-bold text-success">@NetPayDisplay</span>
-                        </div>
-                    </div>
+                    <input class="form-control mb-2" placeholder="Full Name" @bind="newEmployee.FullName" />
+                    <input class="form-control mb-2" placeholder="Role (e.g. Cashier)" @bind="newEmployee.Role" />
+                    <label class="small text-muted fw-bold">Hourly Rate (₱)</label>
+                    <input type="number" class="form-control mb-2" @bind="newEmployee.HourlyRate" />
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button type="button" class="btn btn-success" @onclick="SavePayrollRecord">
-                        <i class="bi bi-check-circle"></i> Confirm & Save
-                    </button>
+                <div class="modal-footer border-top-0">
+                    <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="SaveEmployee">Save Record</button>
                 </div>
             </div>
         </div>
     </div>
 }
 
-@if (IsViewModalOpen && SelectedSlip != null)
+@if (showRunPayrollModal)
 {
     <div class="modal-backdrop show"></div>
     <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Payslip Details</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header bg-navy text-white">
+                    <h5 class="modal-title">Run Payroll</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => showRunPayrollModal = false"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="text-center mb-4">
-                        <h3 class="fw-bold text-navy">MIDAS</h3>
-                        <p class="text-muted small">Official Payslip</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold">SELECT EMPLOYEE</label>
+                            <select class="form-select" @onchange="OnEmployeeSelected">
+                                <option value="">Select...</option>
+                                @if (EmployeesList != null)
+                                {
+                                    @foreach (var e in EmployeesList)
+                                    {
+                                        <option value="@e.Id">@e.FullName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold">HOURLY RATE</label>
+                            <input type="text" class="form-control" value="₱ @selectedHourlyRate.ToString("N2")" readonly />
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="alert alert-info py-2 small">
+                                <i class="bi bi-info-circle me-1"></i> Attendance data integration coming soon. Please enter hours manually for now.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold">TOTAL HOURS WORKED</label>
+                            <input type="number" class="form-control" @bind="inputHours" @bind:after="RecalculatePay" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted fw-bold">GROSS PAY (Rate * Hours)</label>
+                            <input type="text" class="form-control fw-bold" value="₱ @calculatedGross.ToString("N2")" readonly />
+                        </div>
+
+                        <div class="col-12"><hr /></div>
+
+                        <div class="col-md-3">
+                            <label class="small text-muted">Tax (@CurrentSettings.TaxPercentage%)</label>
+                            <input type="text" class="form-control form-control-sm" value="@calcTax.ToString("N2")" readonly />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">SSS</label>
+                            <input type="text" class="form-control form-control-sm" value="@CurrentSettings.SSSAmount" readonly />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">PhilHealth</label>
+                            <input type="text" class="form-control form-control-sm" value="@CurrentSettings.PhilHealthAmount" readonly />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Pag-IBIG</label>
+                            <input type="text" class="form-control form-control-sm" value="@CurrentSettings.PagIbigAmount" readonly />
+                        </div>
+
+                        <div class="col-12 mt-4 text-end">
+                            <h3>Net Pay: <span class="text-success fw-bold">₱ @calculatedNet.ToString("N2")</span></h3>
+                        </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-6"><span class="text-muted">Employee:</span> <br/> <strong>@SelectedSlip.EmployeeName</strong></div>
-                        <div class="col-6 text-end"><span class="text-muted">Date:</span> <br/> <strong>@SelectedSlip.PayDate.ToShortDateString()</strong></div>
-                    </div>
-                    <table class="table table-bordered table-sm">
-                        <tr>
-                            <td>Basic Salary</td>
-                            <td class="text-end">@SelectedSlip.BasicSalary.ToString("N2")</td>
-                        </tr>
-                        <tr>
-                            <td>Allowances</td>
-                            <td class="text-end">@SelectedSlip.Allowances.ToString("N2")</td>
-                        </tr>
-                        <tr class="text-danger">
-                            <td>Deductions (Tax/Gov)</td>
-                            <td class="text-end">- @((SelectedSlip.DeductionTax + SelectedSlip.DeductionBenefits + SelectedSlip.DeductionLoans).ToString("N2"))</td>
-                        </tr>
-                        <tr class="table-success fw-bold">
-                            <td>NET PAY</td>
-                            <td class="text-end">₱@SelectedSlip.NetPay.ToString("N2")</td>
-                        </tr>
-                    </table>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-dark btn-sm"><i class="bi bi-printer"></i> Print</button>
-                    <button type="button" class="btn btn-primary" @onclick="CloseModals">Close</button>
+                    <button class="btn btn-navy px-4 rounded-pill" @onclick="ConfirmPayroll">Confirm & Generate</button>
                 </div>
             </div>
         </div>
@@ -196,91 +268,144 @@
 }
 
 <style>
-    .modal-backdrop { background-color: rgba(0,0,0,0.5); }
-    .text-navy { color: #02001E; }
+    .text-navy {
+        color: #02001E;
+    }
+
+    .bg-navy {
+        background-color: #02001E;
+    }
+
+    .btn-navy {
+        background-color: #02001E;
+        color: white;
+        transition: 0.2s;
+    }
+
+        .btn-navy:hover {
+            background-color: #0c006b;
+            color: white;
+        }
+
+    .modal-backdrop {
+        background-color: rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1040;
+    }
 </style>
 
 @code {
-    // --- MODELS ---
-    public class PayrollRecord
+    private string activeTab = "dashboard";
+    private bool showEmployeeModal = false;
+    private bool showRunPayrollModal = false;
+
+    // Data Holders
+    private List<Employee>? EmployeesList;
+    private PayrollSetting CurrentSettings = new PayrollSetting();
+    private List<PayrollRecord>? PayrollHistory;
+
+    // Form Variables
+    private Employee newEmployee = new Employee();
+
+    // Calculation Variables
+    private int selectedEmployeeId;
+    private string selectedEmployeeName = "";
+    private decimal selectedHourlyRate = 0;
+    private decimal inputHours = 0;
+
+    // Results
+    private decimal calculatedGross => selectedHourlyRate * inputHours;
+    private decimal calcTax => calculatedGross * (CurrentSettings.TaxPercentage / 100);
+    private decimal calculatedNet => calculatedGross - (calcTax + CurrentSettings.SSSAmount + CurrentSettings.PhilHealthAmount + CurrentSettings.PagIbigAmount);
+
+    protected override async Task OnInitializedAsync()
     {
-        public string EmployeeName { get; set; } = "";
-        public DateTime PayDate { get; set; } = DateTime.Now;
-        public DateTime PeriodStart { get; set; } = DateTime.Now.AddDays(-15);
-        public DateTime PeriodEnd { get; set; } = DateTime.Now;
-        
-        // Earnings
-        public decimal BasicSalary { get; set; }
-        public decimal Allowances { get; set; }
-
-        // Deductions
-        public decimal DeductionTax { get; set; }
-        public decimal DeductionBenefits { get; set; }
-        public decimal DeductionLoans { get; set; }
-
-        // Computed Property
-        public decimal NetPay => (BasicSalary + Allowances) - (DeductionTax + DeductionBenefits + DeductionLoans);
+        await LoadData();
     }
 
-    // --- STATE ---
-    private bool IsGeneratorOpen = false;
-    private bool IsViewModalOpen = false;
-    
-    private PayrollRecord CurrentEntry = new PayrollRecord(); // For the form
-    private PayrollRecord SelectedSlip = null; // For viewing details
-
-    // --- DUMMY DATA ---
-    private List<PayrollRecord> PayrollHistory = new List<PayrollRecord>
+    private async Task LoadData()
     {
-        new PayrollRecord 
-        { 
-            EmployeeName = "Cherylou Hong", 
-            BasicSalary = 25000, 
-            Allowances = 2000, 
-            DeductionTax = 1500, 
-            DeductionBenefits = 800,
-            PayDate = DateTime.Now.AddDays(-30)
-        }
-    };
-
-    // --- COMPUTED DISPLAY STRINGS FOR MODAL ---
-    private string GrossPayDisplay => (CurrentEntry.BasicSalary + CurrentEntry.Allowances).ToString("N2");
-    private string TotalDeductionsDisplay => (CurrentEntry.DeductionTax + CurrentEntry.DeductionBenefits + CurrentEntry.DeductionLoans).ToString("N2");
-    private string NetPayDisplay => "₱" + CurrentEntry.NetPay.ToString("N2");
-
-    // --- FUNCTIONS ---
-
-    private void OpenGeneratorModal()
-    {
-        CurrentEntry = new PayrollRecord(); // Reset form
-        IsGeneratorOpen = true;
+        EmployeesList = await PayrollService.GetEmployeesAsync();
+        CurrentSettings = await PayrollService.GetSettingsAsync();
+        PayrollHistory = await PayrollService.GetHistoryAsync();
     }
 
-    private void CalculateTotals()
+    // --- EMPLOYEE LOGIC ---
+    private void OpenAddEmployeeModal()
     {
-        // This is triggered by @bind:after to refresh the UI numbers
-        StateHasChanged();
+        newEmployee = new Employee();
+        showEmployeeModal = true;
     }
 
-    private void SavePayrollRecord()
+    private async Task SaveEmployee()
     {
-        if (!string.IsNullOrEmpty(CurrentEntry.EmployeeName) && CurrentEntry.NetPay > 0)
+        if (!string.IsNullOrEmpty(newEmployee.FullName))
         {
-            // Add new record to top of list
-            PayrollHistory.Insert(0, CurrentEntry); 
-            CloseModals();
+            await PayrollService.AddEmployeeAsync(newEmployee);
+            await LoadData();
+            showEmployeeModal = false;
         }
     }
 
-    private void ViewPayslip(PayrollRecord record)
+    // --- SETTINGS LOGIC ---
+    private async Task SaveSettings()
     {
-        SelectedSlip = record;
-        IsViewModalOpen = true;
+        await PayrollService.SaveSettingsAsync(CurrentSettings);
+        await JS.InvokeVoidAsync("alert", "Settings Saved Successfully!");
     }
 
-    private void CloseModals()
+    // --- PAYROLL CALCULATION LOGIC ---
+    private void OpenRunPayrollModal()
     {
-        IsGeneratorOpen = false;
-        IsViewModalOpen = false;
+        inputHours = 0;
+        selectedHourlyRate = 0;
+        selectedEmployeeId = 0;
+        showRunPayrollModal = true;
+    }
+
+    private void OnEmployeeSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            var emp = EmployeesList?.FirstOrDefault(x => x.Id == id);
+            if (emp != null)
+            {
+                selectedEmployeeId = emp.Id;
+                selectedEmployeeName = emp.FullName;
+                selectedHourlyRate = emp.HourlyRate;
+                RecalculatePay();
+            }
+        }
+    }
+
+    private void RecalculatePay()
+    {
+        StateHasChanged(); // Updates the Gross/Net numbers in real-time
+    }
+
+    private async Task ConfirmPayroll()
+    {
+        if (selectedEmployeeId == 0) return;
+
+        var record = new PayrollRecord
+        {
+            EmployeeName = selectedEmployeeName,
+            PayDate = DateTime.Now,
+            BasicSalary = calculatedGross, // Calculated from Hours * Rate
+            Allowances = 0, // Add allowance field later if needed
+            DeductionTax = calcTax,
+            DeductionBenefits = CurrentSettings.SSSAmount + CurrentSettings.PhilHealthAmount + CurrentSettings.PagIbigAmount,
+            DeductionLoans = 0,
+            NetPay = calculatedNet
+        };
+
+        await PayrollService.CreatePayslipAsync(record);
+        await LoadData();
+        showRunPayrollModal = false;
+        await JS.InvokeVoidAsync("alert", "Payslip Generated!");
     }
 }

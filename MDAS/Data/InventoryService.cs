@@ -3,11 +3,11 @@ using MDAS.Data;
 
 namespace MDAS.Data
 {
-    public class InventoryServices
+    public class InventoryService
     {
         private readonly AppDbContext _db;
 
-        public InventoryServices(AppDbContext db)
+        public InventoryService(AppDbContext db)
         {
             _db = db;
         }

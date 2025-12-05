@@ -1,79 +1,90 @@
 ﻿@page "/expenses"
 @using MDAS.Components.Layout
+@using MDAS.Data
+@inject ExpenseService ExpenseService
 @layout AdminLayout
 
-<div class="container-fluid p-0">
+<PageTitle>Midas - Expenses</PageTitle>
+
+<div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Expenses</h3>
             <span class="text-secondary small">Operational Cost Tracker</span>
         </div>
         <div>
-            <button class="btn btn-outline-secondary me-2" @onclick="OpenCategoryModal">
+            <button class="btn btn-outline-secondary me-2 rounded-pill" @onclick="OpenCategoryModal">
                 <i class="bi bi-tags-fill"></i> Manage Categories
             </button>
-            <button class="btn btn-primary" style="background-color: #02001E; border: none;" @onclick="OpenExpenseModal">
+            <button class="btn btn-primary rounded-pill" style="background-color: #02001E; border: none;" @onclick="OpenExpenseModal">
                 <i class="bi bi-plus-lg"></i> Add Expense
             </button>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-list-check"></i> Expense Log</h5>
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-list-check me-2"></i>Expense Log</h5>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">Date</th>
-                                <th>Category</th>
-                                <th>Description</th>
-                                <th class="text-end pe-4">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (ExpenseList.Count == 0)
-                            {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">No expenses recorded yet.</td>
+                                    <th class="ps-4">Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th class="text-end pe-4">Amount</th>
                                 </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in ExpenseList)
+                            </thead>
+                            <tbody>
+                                @if (ExpenseList == null)
                                 {
-                                    <tr>
-                                        <td class="ps-4">@item.Date.ToString("MMM dd, yyyy")</td>
-                                        <td><span class="badge bg-light text-dark border">@item.Category</span></td>
-                                        <td>@item.Description</td>
-                                        <td class="text-end pe-4 fw-bold">₱@item.Amount.ToString("N2")</td>
-                                    </tr>
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">Loading...</td></tr>
                                 }
-                            }
-                        </tbody>
-                    </table>
+                                else if (ExpenseList.Count == 0)
+                                {
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">No expenses recorded yet.</td></tr>
+                                }
+                                else
+                                {
+                                    @foreach (var item in ExpenseList)
+                                    {
+                                        <tr>
+                                            <td class="ps-4">@item.Date.ToString("MMM dd, yyyy")</td>
+                                            <td><span class="badge bg-light text-dark border">@item.Category</span></td>
+                                            <td>@item.Description</td>
+                                            <td class="text-end pe-4 fw-bold">₱ @item.Amount.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-pie-chart"></i> Categories</h5>
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-pie-chart me-2"></i>Categories</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
-                        @foreach (var cat in Categories)
+                        @if (Categories != null)
                         {
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                @cat.Name
-                                <span class="badge @(cat.Type == "Fixed" ? "bg-primary" : "bg-warning text-dark") rounded-pill">
-                                    @cat.Type
-                                </span>
-                            </li>
+                            @foreach (var cat in Categories)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-4">
+                                    <span>@cat.Name</span>
+                                    <span class="badge @(cat.Type == "Fixed" ? "bg-primary" : "bg-warning text-dark") rounded-pill">
+                                        @cat.Type
+                                    </span>
+                                </li>
+                            }
                         }
                     </ul>
                 </div>
@@ -87,38 +98,41 @@
     <div class="modal-backdrop show"></div>
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Record New Expense</h5>
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">Record Expense</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Category</label>
+                        <label class="form-label small text-muted fw-bold">CATEGORY</label>
                         <select class="form-select" @bind="NewExpense.Category">
-                            <option value="" disabled selected>Select a category...</option>
-                            @foreach (var cat in Categories)
+                            <option value="" disabled selected>Select...</option>
+                            @if (Categories != null)
                             {
-                                <option value="@cat.Name">@cat.Name</option>
+                                @foreach (var cat in Categories)
+                                {
+                                    <option value="@cat.Name">@cat.Name</option>
+                                }
                             }
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
+                        <label class="form-label small text-muted fw-bold">DESCRIPTION</label>
                         <input type="text" class="form-control" @bind="NewExpense.Description" placeholder="e.g. Monthly Rent" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Amount</label>
+                        <label class="form-label small text-muted fw-bold">AMOUNT (₱)</label>
                         <input type="number" class="form-control" @bind="NewExpense.Amount" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Date</label>
+                        <label class="form-label small text-muted fw-bold">DATE</label>
                         <input type="date" class="form-control" @bind="NewExpense.Date" />
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveExpense">Save Expense</button>
+                <div class="modal-footer border-top-0">
+                    <button class="btn btn-light rounded-pill" @onclick="CloseModals">Cancel</button>
+                    <button class="btn btn-primary rounded-pill px-4" style="background-color: #02001E; border: none;" @onclick="SaveExpense">Save</button>
                 </div>
             </div>
         </div>
@@ -130,15 +144,15 @@
     <div class="modal-backdrop show"></div>
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Manage Categories</h5>
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">Manage Categories</h5>
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-4">
                         <input type="text" class="form-control" placeholder="New Category Name" @bind="NewCategoryName" />
-                        <select class="form-select" style="max-width: 100px;" @bind="NewCategoryType">
+                        <select class="form-select" style="max-width: 110px;" @bind="NewCategoryType">
                             <option value="Fixed">Fixed</option>
                             <option value="Variable">Variable</option>
                         </select>
@@ -146,19 +160,22 @@
                     </div>
 
                     <ul class="list-group">
-                        @foreach (var cat in Categories)
+                        @if (Categories != null)
                         {
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>@cat.Name <small class="text-muted">(@cat.Type)</small></span>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(cat)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </li>
+                            @foreach (var cat in Categories)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>@cat.Name <small class="text-muted">(@cat.Type)</small></span>
+                                    <button class="btn btn-sm btn-outline-danger border-0" @onclick="() => DeleteCategory(cat)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </li>
+                            }
                         }
                     </ul>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Close</button>
+                <div class="modal-footer border-top-0">
+                    <button class="btn btn-light rounded-pill w-100" @onclick="CloseModals">Close</button>
                 </div>
             </div>
         </div>
@@ -166,64 +183,59 @@
 }
 
 <style>
-    /* Simple backdrop for custom modals */
     .modal-backdrop {
         background-color: rgba(0,0,0,0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1040;
+    }
+
+    .text-navy {
+        color: #02001E;
     }
 </style>
 
 @code {
-    // --- MODELS ---
-    public class ExpenseItem
-    {
-        public DateTime Date { get; set; } = DateTime.Now;
-        public string Category { get; set; } = "";
-        public string Description { get; set; } = "";
-        public decimal Amount { get; set; }
-    }
-
-    public class CategoryItem
-    {
-        public string Name { get; set; } = "";
-        public string Type { get; set; } = "Fixed"; // Fixed or Variable
-    }
-
     // --- STATE VARIABLES ---
     private bool IsExpenseModalOpen = false;
     private bool IsCategoryModalOpen = false;
 
     // Data Holders
-    private ExpenseItem NewExpense = new ExpenseItem();
+    private ExpenseRecord NewExpense = new ExpenseRecord();
     private string NewCategoryName = "";
     private string NewCategoryType = "Variable";
 
-    // --- DATA LISTS (Pre-populated for demo) ---
-    private List<CategoryItem> Categories = new List<CategoryItem>
+    // Data Lists
+    private List<ExpenseCategory>? Categories;
+    private List<ExpenseRecord>? ExpenseList;
+
+    // --- INITIALIZATION ---
+    protected override async Task OnInitializedAsync()
     {
-        new CategoryItem { Name = "Rent", Type = "Fixed" },
-        new CategoryItem { Name = "Utilities", Type = "Variable" },
-        new CategoryItem { Name = "Salaries", Type = "Fixed" },
-        new CategoryItem { Name = "Office Supplies", Type = "Variable" }
-    };
+        // Seed default categories if empty
+        await ExpenseService.SeedDefaultsAsync();
+        await LoadData();
+    }
 
-    private List<ExpenseItem> ExpenseList = new List<ExpenseItem>
+    private async Task LoadData()
     {
-        new ExpenseItem { Date = DateTime.Now, Category = "Rent", Description = "Office Space Rent", Amount = 15000.00m },
-        new ExpenseItem { Date = DateTime.Now.AddDays(-2), Category = "Utilities", Description = "Electric Bill", Amount = 4500.50m }
-    };
+        Categories = await ExpenseService.GetCategoriesAsync();
+        ExpenseList = await ExpenseService.GetExpensesAsync();
+    }
 
-    // --- FUNCTIONS ---
-
-    // Modal Controls
+    // --- MODAL CONTROLS ---
     private void OpenExpenseModal()
     {
-        NewExpense = new ExpenseItem { Date = DateTime.Now }; // Reset form
+        NewExpense = new ExpenseRecord { Date = DateTime.Now };
         IsExpenseModalOpen = true;
     }
 
     private void OpenCategoryModal()
     {
-        NewCategoryName = ""; // Reset input
+        NewCategoryName = "";
         IsCategoryModalOpen = true;
     }
 
@@ -233,28 +245,30 @@
         IsCategoryModalOpen = false;
     }
 
-    // Save Logic
-    private void SaveExpense()
+    // --- SAVE LOGIC ---
+    private async Task SaveExpense()
     {
         if (!string.IsNullOrWhiteSpace(NewExpense.Category) && NewExpense.Amount > 0)
         {
-            // Add to list (Insert at top so it appears first)
-            ExpenseList.Insert(0, NewExpense);
+            await ExpenseService.AddExpenseAsync(NewExpense);
+            await LoadData();
             CloseModals();
         }
     }
 
-    private void AddCategory()
+    private async Task AddCategory()
     {
         if (!string.IsNullOrWhiteSpace(NewCategoryName))
         {
-            Categories.Add(new CategoryItem { Name = NewCategoryName, Type = NewCategoryType });
-            NewCategoryName = ""; // Clear input
+            await ExpenseService.AddCategoryAsync(new ExpenseCategory { Name = NewCategoryName, Type = NewCategoryType });
+            NewCategoryName = "";
+            await LoadData();
         }
     }
 
-    private void DeleteCategory(CategoryItem item)
+    private async Task DeleteCategory(ExpenseCategory cat)
     {
-        Categories.Remove(item);
+        await ExpenseService.DeleteCategoryAsync(cat);
+        await LoadData();
     }
 }
