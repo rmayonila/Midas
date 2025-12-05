@@ -1,176 +1,206 @@
 ﻿@page "/finance-report"
 @using MDAS.Components.Layout
+@using MDAS.Data
+@inject FinanceService FinanceService
+@inject IJSRuntime JS
 @layout AdminLayout
 
+<PageTitle>Midas - Finance Report</PageTitle>
 
-<div class="container-fluid p-0">
+<div class="container-fluid p-4">
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Finance Report</h3>
-            <span class="text-secondary small">Analytical Truth</span>
+            <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Financial Performance</h3>
+            <span class="text-secondary small">Quarterly Profit & Loss Statement</span>
         </div>
-        <div class="d-flex gap-2">
-            <select class="form-select form-select-sm" style="width: 150px;">
-                <option>Year 2025</option>
-                <option>Year 2024</option>
-            </select>
-            <button class="btn btn-outline-secondary btn-sm" @onclick="PrintReport">
-                <i class="bi bi-printer"></i> Print
-            </button>
-            <button class="btn btn-primary btn-sm" style="background-color: #02001E; border: none;">
-                <i class="bi bi-download"></i> Export PDF
-            </button>
-        </div>
+        <button class="btn btn-primary rounded-pill px-4" style="background-color: #02001E; border: none;" @onclick="ExportToPdf">
+            <i class="bi bi-file-earmark-pdf-fill me-2"></i> Export PDF
+        </button>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 border-start border-4 border-success h-100">
-                <div class="card-body">
-                    <div class="text-secondary small text-uppercase fw-bold">Total Revenue</div>
-                    <div class="fs-3 fw-bold text-dark">₱1,250,000</div>
-                    <div class="small text-success"><i class="bi bi-arrow-up"></i> 12% vs last month</div>
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-auto"><span class="fw-bold text-muted small">REPORT PERIOD:</span></div>
+                <div class="col-auto">
+                    <select class="form-select form-select-sm rounded-pill bg-light border-0 fw-bold" @bind="selectedYear">
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100">
-                <div class="card-body">
-                    <div class="text-secondary small text-uppercase fw-bold">Total Expenses</div>
-                    <div class="fs-3 fw-bold text-dark">₱845,000</div>
-                    <div class="small text-danger"><i class="bi bi-arrow-up"></i> 5% vs last month</div>
+                <div class="col-auto">
+                    <select class="form-select form-select-sm rounded-pill bg-light border-0 fw-bold" @bind="selectedQuarter">
+                        <option value="1">Q1 (Jan - Mar)</option>
+                        <option value="2">Q2 (Apr - Jun)</option>
+                        <option value="3">Q3 (Jul - Sep)</option>
+                        <option value="4">Q4 (Oct - Dec)</option>
+                    </select>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100">
-                <div class="card-body">
-                    <div class="text-secondary small text-uppercase fw-bold">Net Profit</div>
-                    <div class="fs-3 fw-bold" style="color: #02001E;">₱405,000</div>
-                    <div class="small text-success">Healthy Margin (32%)</div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-navy rounded-pill px-3" @onclick="LoadReport">Generate Report</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-7">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-file-earmark-spreadsheet"></i> P&L Statement</h5>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">Category</th>
-                                <th class="text-end pe-4">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="table-secondary fw-bold"><td class="ps-4" colspan="2">INCOME</td></tr>
-                            <tr>
-                                <td class="ps-4">Sales Revenue</td>
-                                <td class="text-end pe-4">₱1,250,000.00</td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">Service Income</td>
-                                <td class="text-end pe-4">₱0.00</td>
-                            </tr>
-                            <tr class="fw-bold">
-                                <td class="ps-4 text-primary">Total Income</td>
-                                <td class="text-end pe-4 text-primary">₱1,250,000.00</td>
-                            </tr>
-
-                            <tr class="table-secondary fw-bold"><td class="ps-4" colspan="2">LESS: EXPENSES</td></tr>
-                            <tr>
-                                <td class="ps-4">Cost of Goods Sold (COGS)</td>
-                                <td class="text-end pe-4 text-danger">(₱550,000.00)</td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">Operational Expenses (Rent, Utilities)</td>
-                                <td class="text-end pe-4 text-danger">(₱145,000.00)</td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">Payroll & Salaries</td>
-                                <td class="text-end pe-4 text-danger">(₱150,000.00)</td>
-                            </tr>
-                            <tr class="fw-bold">
-                                <td class="ps-4 text-danger">Total Expenses</td>
-                                <td class="text-end pe-4 text-danger">(₱845,000.00)</td>
-                            </tr>
-
-                            <tr class="table-active border-top border-2">
-                                <td class="ps-4 fs-5 fw-bold text-dark">NET PROFIT</td>
-                                <td class="text-end pe-4 fs-5 fw-bold text-success">₱405,000.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    @if (Report == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">Crunching numbers...</p>
         </div>
-
-        <div class="col-lg-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0 text-primary"><i class="bi bi-graph-up-arrow"></i> Sales Analytics</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted small mb-4">Monthly revenue performance for the last 6 months.</p>
-
-                    <div class="d-flex justify-content-around align-items-end h-75 gap-2" style="min-height: 250px;">
-                        @foreach (var item in MonthlySales)
-                        {
-                            <div class="text-center w-100 d-flex flex-column align-items-center">
-                                <div class="w-100 rounded-top"
-                                     style="height: @(item.Percentage)%; background-color: @(item.IsHighest ? "#02001E" : "#E5E7EB"); transition: height 1s;"
-                                     title="₱@item.Amount.ToString("N0")">
-                                </div>
-                                <span class="small mt-2 text-muted fw-bold" style="font-size: 0.75rem;">@item.Month</span>
-                            </div>
-                        }
+    }
+    else
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100 p-3 bg-success-subtle">
+                    <div class="card-body">
+                        <h6 class="text-success fw-bold text-uppercase mb-2">Total Revenue</h6>
+                        <h2 class="fw-bold mb-0 text-success">₱ @Report.TotalRevenue.ToString("N2")</h2>
+                        <small class="text-muted">Sales & Income</small>
                     </div>
-
-                    <div class="mt-4 pt-3 border-top">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span style="width:10px; height:10px; background-color: #02001E; display:inline-block; border-radius:50%;"></span>
-                            <span class="small text-muted">Peak Season (December)</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span style="width:10px; height:10px; background-color: #E5E7EB; display:inline-block; border-radius:50%;"></span>
-                            <span class="small text-muted">Standard Performance</span>
-                        </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100 p-3 bg-danger-subtle">
+                    <div class="card-body">
+                        <h6 class="text-danger fw-bold text-uppercase mb-2">Total Expenses</h6>
+                        <h2 class="fw-bold mb-0 text-danger">₱ @Report.TotalExpenses.ToString("N2")</h2>
+                        <small class="text-muted">OpEx + COGS + Payroll</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100 p-3 @(Report.NetProfit >= 0 ? "bg-primary-subtle" : "bg-warning-subtle")">
+                    <div class="card-body">
+                        <h6 class="@(Report.NetProfit >= 0 ? "text-primary" : "text-dark") fw-bold text-uppercase mb-2">Net Profit</h6>
+                        <h2 class="fw-bold mb-0 @(Report.NetProfit >= 0 ? "text-primary" : "text-dark")">₱ @Report.NetProfit.ToString("N2")</h2>
+                        <small class="text-muted">Margin: <strong>@Report.ProfitMargin.ToString("N1")%</strong></small>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-header bg-white py-3 border-bottom-0">
+                        <h5 class="fw-bold text-navy mb-0">Income Statement Breakdown</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Category</th>
+                                    <th>Description</th>
+                                    <th class="text-end pe-4">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-4"><span class="badge bg-success rounded-pill">Income</span></td>
+                                    <td class="fw-bold">Sales Revenue</td>
+                                    <td class="text-end pe-4 fw-bold text-success">+ ₱ @Report.TotalRevenue.ToString("N2")</td>
+                                </tr>
+
+                                <tr class="table-light"><td colspan="3" class="ps-4 text-muted small fw-bold text-uppercase pt-3">Less: Expenses</td></tr>
+
+                                <tr>
+                                    <td class="ps-4"><span class="badge bg-danger rounded-pill">Expense</span></td>
+                                    <td>Cost of Goods Sold (Purchasing)</td>
+                                    <td class="text-end pe-4 text-danger">- ₱ @Report.CostOfGoodsSold.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4"><span class="badge bg-danger rounded-pill">Expense</span></td>
+                                    <td>Payroll & Salaries</td>
+                                    <td class="text-end pe-4 text-danger">- ₱ @Report.PayrollExpenses.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-4"><span class="badge bg-danger rounded-pill">Expense</span></td>
+                                    <td>Operational Expenses (Rent/Utils)</td>
+                                    <td class="text-end pe-4 text-danger">- ₱ @Report.OperationalExpenses.ToString("N2")</td>
+                                </tr>
+
+                                <tr class="table-light border-top border-2">
+                                    <td class="ps-4 pt-3 pb-3 fw-bold text-uppercase">Net Income</td>
+                                    <td></td>
+                                    <td class="text-end pe-4 pt-3 pb-3 h5 fw-bold @(Report.NetProfit >= 0 ? "text-primary" : "text-danger")">
+                                        ₱ @Report.NetProfit.ToString("N2")
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 rounded-4 h-100">
+                    <div class="card-body text-center d-flex flex-column justify-content-center">
+                        <h6 class="text-muted text-uppercase mb-4">Expense Distribution</h6>
+                        <div class="position-relative mx-auto mb-4"
+                             style="width: 150px; height: 150px; border-radius: 50%;
+                                        background: conic-gradient(
+                                            #dc3545 0% 33%,
+                                            #ffc107 33% 66%,
+                                            #0d6efd 66% 100%);">
+                        </div>
+                        <div class="text-start small px-4">
+                            <div class="d-flex justify-content-between mb-2"><span class="text-danger">● Purchasing</span> <span>33%</span></div>
+                            <div class="d-flex justify-content-between mb-2"><span class="text-warning">● Payroll</span> <span>33%</span></div>
+                            <div class="d-flex justify-content-between"><span class="text-primary">● Operations</span> <span>34%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
-@code {
-    // --- MODELS ---
-    public class SalesMetric
-    {
-        public string Month { get; set; }
-        public decimal Amount { get; set; }
-        public int Percentage { get; set; } // Used for Bar height (0-100)
-        public bool IsHighest { get; set; } = false;
+<style>
+    .text-navy {
+        color: #02001E;
     }
 
-    // --- DUMMY DATA FOR ANALYTICS ---
-    public List<SalesMetric> MonthlySales = new List<SalesMetric>
-    {
-        new SalesMetric { Month = "JUL", Amount = 180000, Percentage = 40 },
-        new SalesMetric { Month = "AUG", Amount = 210000, Percentage = 55 },
-        new SalesMetric { Month = "SEP", Amount = 195000, Percentage = 45 },
-        new SalesMetric { Month = "OCT", Amount = 250000, Percentage = 65 },
-        new SalesMetric { Month = "NOV", Amount = 310000, Percentage = 80 },
-        new SalesMetric { Month = "DEC", Amount = 400000, Percentage = 100, IsHighest = true },
-    };
+    .bg-navy {
+        background-color: #02001E;
+        color: white;
+    }
 
-    private void PrintReport()
+    .btn-navy {
+        background-color: #02001E;
+        color: white;
+    }
+
+        .btn-navy:hover {
+            background-color: #0c006b;
+            color: white;
+        }
+</style>
+
+@code {
+    private int selectedYear = DateTime.Now.Year;
+    private int selectedQuarter = (DateTime.Now.Month + 2) / 3; // Current Quarter
+
+    private FinancialReport? Report;
+
+    protected override async Task OnInitializedAsync()
     {
-        // In a real app, this would trigger JSInterop to window.print()
-        // For now, it's a visual placeholder
+        await LoadReport();
+    }
+
+    private async Task LoadReport()
+    {
+        // Fetch real data from database via Service
+        Report = await FinanceService.GetQuarterlyReportAsync(selectedYear, selectedQuarter);
+    }
+
+    private async Task ExportToPdf()
+    {
+        // In a real app, this would generate a file stream.
+        // For now, we simulate the success message.
+        await JS.InvokeVoidAsync("alert", $"Exporting Q{selectedQuarter} {selectedYear} Report to PDF...");
     }
 }

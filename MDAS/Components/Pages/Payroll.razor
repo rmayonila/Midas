@@ -13,8 +13,8 @@
             <h3 class="mb-0 fw-bold" style="color: var(--accent-navy);">Payroll Management</h3>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn rounded-pill px-4 @(activeTab == "dashboard" ? "btn-navy" : "btn-outline-secondary")" @onclick='() => activeTab = "dashboard"'>
-                Dashboard
+            <button class="btn rounded-pill px-4 @(activeTab == "payroll" ? "btn-navy" : "btn-outline-secondary")" @onclick='() => activeTab = "payroll"'>
+                Payroll
             </button>
             <button class="btn rounded-pill px-4 @(activeTab == "employees" ? "btn-navy" : "btn-outline-secondary")" @onclick='() => activeTab = "employees"'>
                 Employees
@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    @if (activeTab == "dashboard")
+    @if (activeTab == "payroll")
     {
         <div class="row g-4">
             <div class="col-lg-9">
@@ -299,7 +299,7 @@
 </style>
 
 @code {
-    private string activeTab = "dashboard";
+    private string activeTab = "payroll"; // Changed default tab to 'payroll'
     private bool showEmployeeModal = false;
     private bool showRunPayrollModal = false;
 
