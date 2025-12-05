@@ -1,0 +1,9 @@
+# Visual Studio cache (Fixes your specific error)
+.vs/
+
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
