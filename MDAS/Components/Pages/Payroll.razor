@@ -30,27 +30,29 @@
         <div class="row g-4">
             <div class="col-lg-9">
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card shadow-sm border-0 rounded-4 h-100 p-3">
                             <h6 class="text-muted small fw-bold text-uppercase">Total Employees</h6>
                             <h2 class="fw-bold text-navy mb-0">@EmployeesList?.Count</h2>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card shadow-sm border-0 rounded-4 h-100 p-3">
                             <h6 class="text-muted small fw-bold text-uppercase">Total Paid (YTD)</h6>
                             <h2 class="fw-bold text-success mb-0">₱ @PayrollHistory?.Sum(x => x.NetPay).ToString("N2")</h2>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-navy text-white shadow-sm border-0 rounded-4 h-100 p-3 d-flex align-items-center justify-content-center cursor-pointer" @onclick="OpenRunPayrollModal" style="cursor: pointer;">
-                            <h5 class="mb-0"><i class="bi bi-play-circle-fill me-2"></i> Run Payroll</h5>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="card shadow-sm border-0 rounded-4">
-                    <div class="card-header bg-white py-3"><h5 class="fw-bold text-navy mb-0">Payslip History</h5></div>
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold text-navy mb-0">Payslip History</h5>
+
+                        <button class="btn btn-navy rounded-pill px-4 btn-sm" @onclick="OpenRunPayrollModal">
+                            <i class="bi bi-plus-lg me-2"></i>New
+                        </button>
+                    </div>
+
                     <div class="card-body p-0">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light">
@@ -103,9 +105,7 @@
         <div class="card shadow-sm border-0 rounded-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold text-navy mb-0">Employee Directory</h5>
-                <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="OpenAddEmployeeModal">
-                    <i class="bi bi-person-plus-fill me-2"></i>Add Employee
-                </button>
+                
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover align-middle">
@@ -113,7 +113,7 @@
                         <tr>
                             <th class="ps-4">Name</th>
                             <th>Role</th>
-                            <th>Hourly Rate</th>
+                            
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -125,7 +125,7 @@
                                 <tr>
                                     <td class="ps-4 fw-bold">@emp.FullName</td>
                                     <td>@emp.Role</td>
-                                    <td>₱ @emp.HourlyRate.ToString("N2") / hr</td>
+                                    
                                     <td><span class="badge bg-success-subtle text-success rounded-pill">@emp.Status</span></td>
                                 </tr>
                             }
@@ -179,8 +179,7 @@
                 <div class="modal-body">
                     <input class="form-control mb-2" placeholder="Full Name" @bind="newEmployee.FullName" />
                     <input class="form-control mb-2" placeholder="Role (e.g. Cashier)" @bind="newEmployee.Role" />
-                    <label class="small text-muted fw-bold">Hourly Rate (₱)</label>
-                    <input type="number" class="form-control mb-2" @bind="newEmployee.HourlyRate" />
+                   
                 </div>
                 <div class="modal-footer border-top-0">
                     <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="SaveEmployee">Save Record</button>
@@ -376,7 +375,7 @@
             {
                 selectedEmployeeId = emp.Id;
                 selectedEmployeeName = emp.FullName;
-                selectedHourlyRate = emp.HourlyRate;
+                
                 RecalculatePay();
             }
         }

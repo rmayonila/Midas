@@ -31,10 +31,7 @@ namespace MDAS
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            // REGISTER SERVICES
-            // IMPORTANT: If this line is still red, go to your Data folder and check 
-            // if the file is named "InventoryService.cs" (Singular) or "InventoryServices.cs" (Plural).
-            // Make them match here!
+           
             builder.Services.AddScoped<InventoryService>();
             builder.Services.AddScoped<PurchaseService>();
             builder.Services.AddScoped<SalesService>();
@@ -42,6 +39,8 @@ namespace MDAS
             builder.Services.AddScoped<PayrollService>();
             builder.Services.AddScoped<FinanceService>();
             builder.Services.AddScoped<EmployeeService>();
+            builder.Services.AddScoped<UserService>();
+
 
             var app = builder.Build();
 

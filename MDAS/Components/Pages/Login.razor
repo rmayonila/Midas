@@ -1,0 +1,121 @@
+﻿@page "/"
+@using MDAS.Components.Layout
+@using MDAS.Data
+@layout EmptyLayout
+
+@inject NavigationManager Navigation
+@inject UserService UserService  
+
+<div class="midas-container">
+    <div class="branding-panel">
+        <div class="line top-right-short"></div>
+        <div class="line top-left-long"></div>
+        <div class="line middle-right"></div>
+        <div class="line bottom-left-horz"></div>
+        <div class="line bottom-left-vert"></div>
+
+        <div class="branding-content">
+            <h2 class="vision-text">"Turning Vision into Value. Every Touch."</h2>
+            <h1 class="midas-title-large">Midas</h1>
+        </div>
+
+        <div class="corner-text bottom-left">Touch for Modern Wealth</div>
+        <div class="corner-text bottom-right">Trust and Security</div>
+    </div>
+
+    <div class="login-panel">
+        <div class="login-box">
+            <div class="login-header">
+                <h1 class="midas-title-small">Midas</h1>
+                <h2>Welcome Back!</h2>
+                <p>Sign in to continue.</p>
+            </div>
+
+            <div class="login-form">
+                <input type="text" placeholder="Email" @bind="Email" class="input-field" />
+                <input type="@(ShowPassword ? "text" : "password")" placeholder="Password" @bind="Password" class="input-field" />
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="showPass" @bind="ShowPassword" />
+                    <label for="showPass">Show Password</label>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="error-message">@ErrorMessage</div>
+                }
+
+                <button class="signin-btn" @onclick="HandleLogin">Sign In</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string Email { get; set; } = "";
+    private string Password { get; set; } = "";
+    private bool ShowPassword { get; set; } = false;
+    private string ErrorMessage { get; set; } = "";
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+        {
+            ErrorMessage = "Please enter email and password.";
+            return;
+        }
+
+        // We use 'await' here because database access is asynchronous
+        // If your UserService uses 'ValidateUser' instead of 'LoginAsync', change this line.
+        var user = await UserService.LoginAsync(Email, Password);
+
+        if (user != null)
+        {
+            ErrorMessage = "";
+            if (user.Role == "Admin")
+            {
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                Navigation.NavigateTo("/employee-dashboard");
+            }
+        }
+        else
+        {
+            ErrorMessage = "Invalid email or password.";
+        }
+    }
+}
+
+<style>
+    /* MAIN LAYOUT */
+    .midas-container { display: flex; width: 100vw; height: 100vh; font-family: 'Times New Roman', serif; overflow: hidden; }
+    .branding-panel { width: 50%; background-color: #020412; position: relative; color: white; display: flex; flex-direction: column; }
+    .line { position: absolute; background-color: rgba(255, 255, 255, 0.4); }
+    .top-right-short { top: 8%; right: 0; width: 55%; height: 1px; }
+    .top-left-long { top: 18%; left: 0; width: 85%; height: 1px; opacity: 0.8; }
+    .middle-right { top: 62%; right: 0; width: 60%; height: 1px; }
+    .bottom-left-horz { bottom: 10%; left: 0; width: 55%; height: 1px; opacity: 0.8; }
+    .bottom-left-vert { bottom: 0; left: 8%; width: 1px; height: 45%; opacity: 0.8; }
+    .branding-content { margin-top: 25%; padding: 0 40px; z-index: 10; }
+    .vision-text { font-family: sans-serif; font-weight: 300; font-size: 1.8rem; color: #e5e7eb; }
+    .midas-title-large { font-size: 5rem; font-style: italic; text-align: right; margin-top: 10px; color: #FFFDD0; }
+    .corner-text { position: absolute; font-family: sans-serif; letter-spacing: 0.15em; color: rgba(255, 255, 255, 0.7); font-size: 1.1rem; }
+    .bottom-left { bottom: 22%; left: 5%; transform-origin: bottom left; transform: rotate(-90deg); white-space: nowrap; }
+    .bottom-right { bottom: 10%; right: 10%; }
+    
+    .login-panel { width: 50%; background-color: white; display: flex; align-items: center; justify-content: center; }
+    .login-box { width: 100%; max-width: 400px; padding: 20px; }
+    .midas-title-small { font-size: 4rem; font-style: italic; color: #020412; margin-bottom: 0; text-align: center; }
+    .login-header h2 { text-align: center; font-family: sans-serif; margin-top: 0; color: #333; }
+    .login-header p { text-align: center; color: #888; font-style: italic; }
+    
+    .login-form { margin-top: 40px; display: flex; flex-direction: column; gap: 20px; }
+    .input-field { width: 100%; padding: 12px; background-color: #FAF8F5; border: 1px solid #EEEBE5; border-radius: 6px; font-size: 1rem; font-style: italic; }
+    .checkbox-container { display: flex; align-items: center; gap: 8px; color: #666; font-style: italic; font-size: 0.9rem; }
+    .signin-btn { background-color: #020412; color: white; padding: 14px; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+    .signin-btn:hover { background-color: #0f172a; }
+    .error-message { color: #991b1b; background-color: #fef2f2; padding: 10px; text-align: center; border-radius: 4px; font-style: italic; }
+    @@media (max-width: 768px) { .midas-container { flex-direction: column; } .branding-panel { display: none; } .login-panel { width: 100%; } }
+</style>

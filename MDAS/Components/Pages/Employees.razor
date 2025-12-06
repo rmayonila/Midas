@@ -92,7 +92,7 @@
                         <div class="text-center mb-4">
                             <div class="avatar-circle mx-auto mb-3">@SelectedEmployee.FullName.Substring(0, 1)</div>
                             <h5 class="fw-bold text-navy mb-0">@SelectedEmployee.FullName</h5>
-                            <span class="text-muted small">@SelectedEmployee.Role • ₱@SelectedEmployee.HourlyRate/hr</span>
+                            <span class="text-muted small">@SelectedEmployee.Role • ₱@SelectedEmployee.Email/hr</span>
                         </div>
 
                         <hr class="text-secondary opacity-25" />
@@ -151,12 +151,16 @@
                     <button type="button" class="btn-close" @onclick="CloseModals"></button>
                 </div>
                 <div class="modal-body">
+
                     <input class="form-control mb-3" placeholder="Full Name" @bind="NewEmployee.FullName" />
                     <input class="form-control mb-3" placeholder="Role (e.g. Sales Associate)" @bind="NewEmployee.Role" />
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">₱</span>
-                        <input type="number" class="form-control" placeholder="Hourly Rate" @bind="NewEmployee.HourlyRate" />
-                    </div>
+
+                    <input type="text" class="form-control mb-3" placeholder="Contact Number" @bind="NewEmployee.ContactNumber" />
+
+                    <input type="email" class="form-control mb-3" placeholder="Email Address" @bind="NewEmployee.Email" />
+
+                    <textarea class="form-control mb-3" rows="3" placeholder="Full Address" @bind="NewEmployee.Address"></textarea>
+
                 </div>
                 <div class="modal-footer border-top-0">
                     <button class="btn text-white rounded-pill px-4" style="background-color: #02001E;" @onclick="SaveEmployee">Save Record</button>

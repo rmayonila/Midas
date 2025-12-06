@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MDAS.Data;
+﻿using MDAS.Data;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace MDAS.Data
 {
@@ -25,6 +26,8 @@ namespace MDAS.Data
         public DbSet<AttendanceLog> AttendanceLogs { get; set; }
 
         public DbSet<EmployeePerformance> EmployeePerformance { get; set; }
+        public DbSet<User> Users { get; set; }
+
     }
 
 
@@ -145,9 +148,13 @@ namespace MDAS.Data
         public int Id { get; set; }
         public string FullName { get; set; } = "";
         public string Role { get; set; } = "Staff";
-        public decimal HourlyRate { get; set; }
         public string Status { get; set; } = "Active";
-        public DateTime JoinedDate { get; set; } = DateTime.Now;
+
+        public string? ContactNumber { get; set; } = string.Empty;
+        public string? Email { get; set; } = string.Empty;
+        public string? Address { get; set; } = string.Empty;
+
+        public DateTime? JoinedDate { get; set; } = DateTime.Now;
     }
 
     public class PayrollSetting
@@ -177,5 +184,20 @@ namespace MDAS.Data
         public int Rating { get; set; } // 1-10
         public string Notes { get; set; } = "";
     }
+
+    public class User
+    {
+        [Key]
+        public int Id { get; set; }
+
+        public string Username { get; set; } = string.Empty; // This will hold the Email
+        public string Password { get; set; } = string.Empty;
+        public string Role { get; set; } = "Staff"; // "Admin" or "Staff"
+        public bool IsActive { get; set; } = true;
+
+        public int? EmployeeId { get; set; } // Nullable link to Employee table
+    }
+
+
 }
 

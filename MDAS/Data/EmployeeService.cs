@@ -14,12 +14,27 @@ namespace MDAS.Data
 
         // 1. GET ALL EMPLOYEES
         public async Task<List<Employee>> GetEmployeesAsync()
+        { 
+        try
+    {
+        return await _db.Employees.ToListAsync();
+    }
+    catch (Exception ex)
+    {
+        // 🚨 THIS IS WHERE THE ERROR MESSAGE WILL APPEAR 🚨
+        Console.WriteLine($"Database Load Error: {ex.Message}");
+        if (ex.InnerException != null)
         {
-            return await _db.Employees.ToListAsync();
+            Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
         }
 
-        // 2. ADD / UPDATE EMPLOYEE
-        public async Task SaveEmployeeAsync(Employee emp)
+// Re-throw the exception so it stops at your breakpoint/log.
+throw; 
+    }
+    }
+
+// 2. ADD / UPDATE EMPLOYEE
+public async Task SaveEmployeeAsync(Employee emp)
         {
             if (emp.Id == 0)
                 _db.Employees.Add(emp);
@@ -52,5 +67,6 @@ namespace MDAS.Data
             if (logs.Count == 0) return 0;
             return logs.Average(p => p.Rating);
         }
+
     }
 }
